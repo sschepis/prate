@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRATE - Trading & Admin Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .order-row {
+            display: flex;
+            align-items: center;
+            height: 1.25rem;
+            font-size: 0.7rem;
+            position: relative;
+        }
+
+        .order-qty {
+            width: 3rem;
+            text-align: right;
+            padding-right: 0.25rem;
+            opacity: 0.7;
+        }
+
+        .order-price {
+            width: 4.5rem;
+            font-family: monospace;
+            font-size: 0.65rem;
+        }
+
+        .order-bar-container {
+            flex: 1;
+            position: relative;
+            height: 100%;
+        }
+
+        .order-bar {
+            position: absolute;
+            height: 100%;
+        }
+
+        .bid-bar-cum {
+            background-color: rgba(22, 163, 74, 0.3);
+        }
+
+        .bid-bar-qty {
+            background-color: rgba(22, 163, 74, 0.5);
+        }
+
+        .ask-bar-cum {
+            background-color: rgba(220, 38, 38, 0.3);
+        }
+
+        .ask-bar-qty {
+            background-color: rgba(220, 38, 38, 0.5);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .animate-pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="flex-shrink-0 bg-gray-800 border-b border-gray-700">
+        <div class="px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold text-blue-400">PRATE</h1>
+                <span class="text-sm text-gray-400">Prime-Resonant Adaptive Trading Ecology</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-sm text-gray-400">System: <span class="text-green-400">Active</span></span>
+                </div>
+                <button class="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600">
+                    <i data-feather="settings" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 min-h-0 px-2 py-2 flex gap-2">
+        <!-- Left Sidebar - Navigation -->
+        <div class="w-48 flex-shrink-0 bg-gray-800 rounded-lg shadow-xl p-3">
+            <nav class="space-y-1">
+                <button onclick="switchTab('trading', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+                    <i data-feather="trending-up" class="w-4 h-4"></i>
+                    Trading
+                </button>
+                <button onclick="switchTab('admin', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                    <i data-feather="sliders" class="w-4 h-4"></i>
+                    Admin
+                </button>
+                <button onclick="switchTab('monitoring', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                    <i data-feather="activity" class="w-4 h-4"></i>
+                    Monitoring
+                </button>
+                <button onclick="switchTab('risk', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                    <i data-feather="shield" class="w-4 h-4"></i>
+                    Risk
+                </button>
+                <button onclick="switchTab('memory', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                    <i data-feather="database" class="w-4 h-4"></i>
+                    Memory
+                </button>
+                <button onclick="switchTab('backtest', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                    <i data-feather="bar-chart-2" class="w-4 h-4"></i>
+                    Backtest
+                </button>
+            </nav>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
+            <!-- Trading Tab -->
+            <div id="trading-tab" class="tab-content active flex-1 min-h-0 flex gap-2">
+                <!-- Chart and Order Book -->
+                <div class="flex-1 min-w-0 flex gap-2">
+                    <!-- Chart -->
+                    <div class="flex-1 min-h-0 bg-gray-800 rounded-lg shadow-xl overflow-hidden flex flex-col">
+                        <div class="flex-shrink-0 flex items-center justify-between border-b border-gray-700 px-4 py-2">
+                            <div class="flex items-center gap-3">
+                                <span class="font-medium text-blue-400">BTC/USDT</span>
+                                <span id="current-price" class="text-sm text-green-400">$0.00 ▲</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="px-2 py-1 bg-gray-700 rounded-md text-xs hover:bg-gray-600">
+                                    <i data-feather="maximize" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-h-0">
+                            <div id="tradingview-chart" class="w-full h-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Book -->
+                    <div class="w-64 flex-shrink-0 bg-gray-800 rounded-lg shadow-xl overflow-hidden flex flex-col">
+                        <div class="flex-shrink-0 px-3 py-2 border-b border-gray-700">
+                            <h3 class="text-sm font-semibold text-gray-400">ORDER BOOK</h3>
+                        </div>
+                        <div class="flex-1 min-h-0 overflow-auto p-2">
+                            <div class="mb-1">
+                                <div class="text-xs text-red-400 mb-1">ASKS</div>
+                                <div id="asks-container"></div>
+                            </div>
+                            <div class="my-2 py-1 border-y border-gray-700 text-center">
+                                <div id="spread-price" class="text-sm font-mono font-bold">$0.00</div>
+                                <div class="text-xs text-gray-500">Spread</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-green-400 mb-1">BIDS</div>
+                                <div id="bids-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trading Panel -->
+                <div class="w-80 flex-shrink-0 bg-gray-800 rounded-lg shadow-xl overflow-auto p-4">
+                    <h3 class="font-bold text-lg mb-4">Trading Panel</h3>
+                    
+                    <!-- Order Type Selector -->
+                    <div class="flex gap-1 mb-4">
+                        <button class="flex-1 px-3 py-2 bg-blue-600 rounded-md text-sm font-medium">Limit</button>
+                        <button class="flex-1 px-3 py-2 bg-gray-700 rounded-md text-sm font-medium hover:bg-gray-600">Market</button>
+                        <button class="flex-1 px-3 py-2 bg-gray-700 rounded-md text-sm font-medium hover:bg-gray-600">Stop</button>
+                    </div>
+
+                    <!-- Order Form -->
+                    <div class="space-y-3 mb-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Price</label>
+                            <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Amount (BTC)</label>
+                            <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="py-2 bg-green-600 rounded-md font-medium text-sm hover:bg-green-700">Buy</button>
+                            <button class="py-2 bg-red-600 rounded-md font-medium text-sm hover:bg-red-700">Sell</button>
+                        </div>
+                    </div>
+
+                    <!-- Account Info -->
+                    <div class="pt-4 border-t border-gray-700 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Balance:</span>
+                            <span>10,000.00 USDT</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Available:</span>
+                            <span>8,500.00 USDT</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Position:</span>
+                            <span class="text-green-400">+0.15 BTC</span>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders -->
+                    <div class="pt-4 border-t border-gray-700 mt-4">
+                        <h4 class="text-sm font-semibold mb-2 text-gray-400">Recent Orders</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">BUY 0.05 BTC</span>
+                                <span class="text-green-400">Filled</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">SELL 0.03 BTC</span>
+                                <span class="text-green-400">Filled</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Tab -->
+            <div id="admin-tab" class="tab-content flex-1 min-h-0 overflow-auto">
+                <div class="grid grid-cols-2 gap-4 p-4">
+                    <!-- System Configuration -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="settings" class="w-5 h-5"></i>
+                            System Configuration
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Trading Mode</label>
+                                <select class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm">
+                                    <option>Simulation</option>
+                                    <option>Live Trading</option>
+                                    <option>Paper Trading</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Strategy</label>
+                                <select class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm">
+                                    <option>Trend Following</option>
+                                    <option>Mean Reversion</option>
+                                    <option>Breakout</option>
+                                    <option>Liquidity Mining</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Max Position Size</label>
+                                <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" value="1.0">
+                            </div>
+                            <button class="w-full py-2 bg-blue-600 rounded-md text-sm font-medium hover:bg-blue-700">
+                                Save Configuration
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- API Management -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="key" class="w-5 h-5"></i>
+                            API Management
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Exchange</label>
+                                <select class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm">
+                                    <option>MEXC Futures</option>
+                                    <option>Binance</option>
+                                    <option>Coinbase</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">API Key</label>
+                                <input type="password" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" placeholder="••••••••" autocomplete="off" data-form-type="other">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">API Secret</label>
+                                <input type="password" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" placeholder="••••••••" autocomplete="off" data-form-type="other">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-red-400 rounded-full"></div>
+                                <span class="text-xs text-gray-400">Status: Disconnected</span>
+                            </div>
+                            <button class="w-full py-2 bg-green-600 rounded-md text-sm font-medium hover:bg-green-700">
+                                Connect
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Guild System -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="users" class="w-5 h-5"></i>
+                            Guild System
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Trend Following</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-green-400">+2.3%</span>
+                                    <input type="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Mean Reversion</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-green-400">+1.7%</span>
+                                    <input type="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Breakout</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-red-400">-0.5%</span>
+                                    <input type="checkbox">
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Liquidity Mining</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-green-400">+0.9%</span>
+                                    <input type="checkbox" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Database Management -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="database" class="w-5 h-5"></i>
+                            Database Management
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Candles Stored:</span>
+                                <span>1,234,567</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Database Size:</span>
+                                <span>245 MB</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Last Update:</span>
+                                <span>2 min ago</span>
+                            </div>
+                            <button class="w-full py-2 bg-gray-700 rounded-md text-sm font-medium hover:bg-gray-600">
+                                Optimize Database
+                            </button>
+                            <button class="w-full py-2 bg-gray-700 rounded-md text-sm font-medium hover:bg-gray-600">
+                                Export Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitoring Tab -->
+            <div id="monitoring-tab" class="tab-content flex-1 min-h-0 overflow-auto">
+                <div class="grid grid-cols-3 gap-4 p-4">
+                    <!-- Performance Metrics -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="trending-up" class="w-5 h-5"></i>
+                            Performance
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="text-xs text-gray-400">Total P&L</div>
+                                <div class="text-2xl font-bold text-green-400">+$1,234.56</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Sharpe Ratio</div>
+                                <div class="text-xl font-bold">1.45</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Win Rate</div>
+                                <div class="text-xl font-bold">68.3%</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Max Drawdown</div>
+                                <div class="text-xl font-bold text-red-400">-5.2%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Metrics -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="cpu" class="w-5 h-5"></i>
+                            System Health
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">CPU Usage</span>
+                                    <span>34%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 34%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Memory Usage</span>
+                                    <span>56%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 56%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Network I/O</span>
+                                    <span>23%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 23%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trade Activity -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="activity" class="w-5 h-5"></i>
+                            Trade Activity
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="text-xs text-gray-400">Trades Today</div>
+                                <div class="text-2xl font-bold">47</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Avg Trade Size</div>
+                                <div class="text-xl font-bold">0.08 BTC</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Last Trade</div>
+                                <div class="text-sm">2 min ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Logs -->
+                    <div class="col-span-3 bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="file-text" class="w-5 h-5"></i>
+                            System Logs
+                        </h3>
+                        <div class="bg-gray-900 rounded p-3 font-mono text-xs space-y-1 h-48 overflow-auto">
+                            <div class="text-green-400">[10:13:45] Trade executed: BUY 0.05 BTC @ $42,345.67</div>
+                            <div class="text-blue-400">[10:13:22] Memory updated: Context similarity 0.87</div>
+                            <div class="text-gray-400">[10:13:15] Feature engine: RSI=45.2, ATR=234.5</div>
+                            <div class="text-green-400">[10:12:58] Trade executed: SELL 0.03 BTC @ $42,356.12</div>
+                            <div class="text-yellow-400">[10:12:45] Entropy regulation: H=2.34, H*=2.5</div>
+                            <div class="text-blue-400">[10:12:30] Bandit selected basis: Prime 17</div>
+                            <div class="text-gray-400">[10:12:15] Order book update received</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Tab -->
+            <div id="risk-tab" class="tab-content flex-1 min-h-0 overflow-auto">
+                <div class="grid grid-cols-2 gap-4 p-4">
+                    <!-- Risk Limits -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="shield" class="w-5 h-5"></i>
+                            Risk Limits
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Max Daily Loss</label>
+                                <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" value="500">
+                                <div class="text-xs text-gray-500 mt-1">Current: $87.50 (17.5%)</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Max Position Size</label>
+                                <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" value="1.0">
+                                <div class="text-xs text-gray-500 mt-1">Current: 0.15 BTC (15%)</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Max Leverage</label>
+                                <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" value="3">
+                                <div class="text-xs text-gray-500 mt-1">Current: 1.2x</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KAM Protection -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="alert-triangle" class="w-5 h-5"></i>
+                            KAM Protection
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Enable KAM</span>
+                                <input type="checkbox" checked>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Protection Status</div>
+                                <div class="text-sm text-green-400">Active - All checks passing</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Rejected Intents (24h)</div>
+                                <div class="text-xl font-bold">3</div>
+                            </div>
+                            <div class="bg-gray-900 rounded p-2 text-xs space-y-1">
+                                <div class="text-yellow-400">Recent rejections:</div>
+                                <div class="text-gray-400">• Position size exceeded limit</div>
+                                <div class="text-gray-400">• Daily loss threshold</div>
+                                <div class="text-gray-400">• Leverage too high</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Risk -->
+                    <div class="col-span-2 bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="pie-chart" class="w-5 h-5"></i>
+                            Portfolio Risk Analysis
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <div class="text-xs text-gray-400">Value at Risk (VaR)</div>
+                                <div class="text-xl font-bold text-yellow-400">$234.56</div>
+                                <div class="text-xs text-gray-500">95% confidence</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Expected Shortfall</div>
+                                <div class="text-xl font-bold text-orange-400">$312.89</div>
+                                <div class="text-xs text-gray-500">Worst 5%</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Beta</div>
+                                <div class="text-xl font-bold">0.87</div>
+                                <div class="text-xs text-gray-500">vs BTC</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Tab -->
+            <div id="memory-tab" class="tab-content flex-1 min-h-0 overflow-auto">
+                <div class="grid grid-cols-2 gap-4 p-4">
+                    <!-- Holographic Memory -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="layers" class="w-5 h-5"></i>
+                            Holographic Memory
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Memory Size:</span>
+                                <span>2048 dimensions</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Decay Rate:</span>
+                                <span>0.95</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Learning Rate:</span>
+                                <span>0.01</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Stored Patterns:</span>
+                                <span>342</span>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400 mb-1">Memory Utilization</div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-purple-500 h-2 rounded-full" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entropy & Phase -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="zap" class="w-5 h-5"></i>
+                            Entropy & Phase
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="text-xs text-gray-400">Current Entropy (H)</div>
+                                <div class="text-2xl font-bold">2.34</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Target Entropy (H*)</div>
+                                <div class="text-xl font-bold text-blue-400">2.50</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Tau (Temperature)</div>
+                                <div class="text-xl font-bold">0.87</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Phase Coherence</div>
+                                <div class="text-xl font-bold text-green-400">0.92</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prime Basis -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="hash" class="w-5 h-5"></i>
+                            Prime Basis Selection
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span>Prime 17</span>
+                                <span class="text-blue-400">Active</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Prime 19</span>
+                                <span class="text-gray-400">Standby</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Prime 23</span>
+                                <span class="text-gray-400">Standby</span>
+                            </div>
+                            <div class="pt-2 border-t border-gray-700">
+                                <div class="text-xs text-gray-400">Selection Method</div>
+                                <div>Thompson Sampling</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Context Retrieval -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="search" class="w-5 h-5"></i>
+                            Context Retrieval
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="text-xs text-gray-400">Last Retrieval</div>
+                                <div class="text-sm">15 seconds ago</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Similarity Score</div>
+                                <div class="text-xl font-bold text-green-400">0.87</div>
+                            </div>
+                            <div class="bg-gray-900 rounded p-2 text-xs">
+                                <div class="text-gray-400 mb-1">Retrieved Context:</div>
+                                <div>Market: Trending Up</div>
+                                <div>Volatility: Medium</div>
+                                <div>Similar to: 2024-10-28 14:30</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backtest Tab -->
+            <div id="backtest-tab" class="tab-content flex-1 min-h-0 overflow-auto">
+                <div class="p-4 space-y-4">
+                    <!-- Backtest Configuration -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-feather="bar-chart-2" class="w-5 h-5"></i>
+                            Backtest Configuration
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Start Date</label>
+                                <input type="date" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">End Date</label>
+                                <input type="date" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Initial Capital</label>
+                                <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" value="10000">
+                            </div>
+                        </div>
+                        <button class="mt-4 px-6 py-2 bg-blue-600 rounded-md font-medium hover:bg-blue-700">
+                            Run Backtest
+                        </button>
+                    </div>
+
+                    <!-- Backtest Results -->
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                            <div class="text-xs text-gray-400">Total Return</div>
+                            <div class="text-2xl font-bold text-green-400">+24.5%</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                            <div class="text-xs text-gray-400">Sharpe Ratio</div>
+                            <div class="text-2xl font-bold">1.67</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                            <div class="text-xs text-gray-400">Max Drawdown</div>
+                            <div class="text-2xl font-bold text-red-400">-8.3%</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                            <div class="text-xs text-gray-400">Win Rate</div>
+                            <div class="text-2xl font-bold">62.4%</div>
+                        </div>
+                    </div>
+
+                    <!-- Equity Curve Placeholder -->
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                        <h3 class="text-lg font-bold mb-4">Equity Curve</h3>
+                        <div class="bg-gray-900 rounded h-64 flex items-center justify-center text-gray-500">
+                            Chart will be displayed here
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="flex-shrink-0 bg-gray-800 border-t border-gray-700 px-4 py-2">
+        <div class="flex items-center justify-between text-xs text-gray-400">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>API: Connected</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>WebSocket: Live</span>
+                </div>
+            </div>
+            <div id="footer-time">00:00:00 UTC</div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        // Tab switching
+        function switchTab(tabName, event) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-gray-400', 'hover:bg-gray-700');
+            });
+            if (event && event.target) {
+                event.target.classList.remove('text-gray-400', 'hover:bg-gray-700');
+                event.target.classList.add('bg-blue-600', 'text-white');
+            }
+            
+            feather.replace();
+        }
+
+        // Order Book WebSocket
+        let ws = null;
+        let symbol = 'btcusdt';
+        let orderBook = { bids: [], asks: [] };
+        let currentPrice = 0;
+
+        function connectWebSocket() {
+            if (ws) ws.close();
+            
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@depth20@100ms`);
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.lastUpdateId) {
+                        const bids = (data.bids || []).slice(0, 10).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+                        const asks = (data.asks || []).slice(0, 10).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+                        
+                        orderBook = { bids, asks };
+                        
+                        if (bids.length > 0 && asks.length > 0) {
+                            currentPrice = (bids[0][0] + asks[0][0]) / 2;
+                            document.getElementById('current-price').textContent = '$' + currentPrice.toFixed(2) + ' ▲';
+                            document.getElementById('spread-price').textContent = '$' + currentPrice.toFixed(2);
+                        }
+                        
+                        renderOrderBook();
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+        }
+
+        function calculateCumulativeVolume(orders) {
+            let cumulative = 0;
+            return orders.map(([price, qty]) => {
+                cumulative += qty;
+                return [price, cumulative, qty];
+            });
+        }
+
+        function renderOrderBook() {
+            if (orderBook.bids.length === 0 || orderBook.asks.length === 0) return;
+
+            renderOrders(orderBook.asks.slice().reverse(), 'ask', 'asks-container');
+            renderOrders(orderBook.bids, 'bid', 'bids-container');
+        }
+
+        function renderOrders(orders, type, containerId) {
+            const cumulativeOrders = calculateCumulativeVolume(orders);
+            const maxVolume = Math.max(...cumulativeOrders.map(([, cum]) => cum));
+            const maxBarWidth = 150;
+
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            cumulativeOrders.forEach(([price, cumVolume, qty]) => {
+                const barWidth = (cumVolume / maxVolume) * maxBarWidth;
+                const qtyBarWidth = (qty / maxVolume) * maxBarWidth;
+                const priceStr = price.toFixed(2);
+                const wholePart = priceStr.split('.')[0];
+                const decimalPart = priceStr.split('.')[1];
+                
+                const row = document.createElement('div');
+                row.className = 'order-row';
+                
+                row.innerHTML = `
+                    <div class="order-qty">${qty.toFixed(3)}</div>
+                    <div class="order-price">
+                        <span style="color: white;">${wholePart}</span>
+                        <span style="color: #6b7280;">.${decimalPart}</span>
+                    </div>
+                    <div class="order-bar-container">
+                        <div class="order-bar ${type}-bar-cum" style="width: ${barWidth}px;"></div>
+                        <div class="order-bar ${type}-bar-qty" style="width: ${qtyBarWidth}px;"></div>
+                    </div>
+                `;
+                
+                container.appendChild(row);
+            });
+        }
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toUTCString().split(' ')[4];
+            document.getElementById('footer-time').textContent = timeString + ' UTC';
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Initialize TradingView Chart
+        new TradingView.widget({
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": "15",
+            "timezone": "Etc/UTC",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": "#1f2937",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview-chart"
+        });
+
+        // Connect to WebSocket
+        connectWebSocket();
+    </script>
+</body>
+</html>
