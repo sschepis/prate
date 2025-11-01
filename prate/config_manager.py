@@ -400,7 +400,7 @@ def create_default_schema() -> ConfigSchema:
         required_fields=['max_drawdown', 'max_position_size'],
         field_types={'max_drawdown': (int, float), 'max_position_size': (int, float)},
         field_validators={
-            'max_drawdown': lambda x: positive_float(x) if x > 0 else None,
+            'max_drawdown': positive_float,
             'max_position_size': positive_float
         }
     )

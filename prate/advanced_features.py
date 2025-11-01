@@ -3,6 +3,7 @@ Advanced Features for PRATE: Multi-symbol support, portfolio-level risk manageme
 cross-asset correlations, and adaptive parameter tuning.
 """
 
+import copy
 import numpy as np
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
@@ -241,7 +242,6 @@ class AdaptiveParameterTuner:
             Adapted parameter dictionary
         """
         # Deep copy to avoid modifying original
-        import copy
         params = copy.deepcopy(self.base_params)
         
         # Apply regime multipliers
