@@ -100,22 +100,26 @@ PRATE (Prime-Resonant Adaptive Trading Ecology) - An adaptive trading system usi
   - DESIGN.md with mathematical formulation
   - This STATUS.md file
 
+### ✅ Complete (Recently Added)
+
+#### Feature Engine Enhancements
+- [x] Real technical indicators (EMA, RSI, ATR, Bollinger Bands)
+- [x] Order book imbalance calculations
+- [x] Microstructure features (pressure, realized variance)
+- [x] Heuristic-based regime classification
+
+#### Simulator Improvements
+- [x] Realistic fill probability models
+- [x] Order book depth simulation
+- [x] Perpetual futures funding rate simulation
+- [x] Latency injection
+- [x] Partial fill support
+
 ---
 
 ### 🚧 In Progress
 
-#### Feature Engine Enhancements
-- [ ] Real technical indicators (EMA, RSI, ATR, Bollinger Bands)
-- [ ] Order book imbalance calculations
-- [ ] Microstructure features (pressure, realized variance)
-- [ ] Advanced regime classification (ML-based)
-
-#### Simulator Improvements
-- [ ] Realistic fill probability models
-- [ ] Order book depth simulation
-- [ ] Perpetual futures funding rate simulation
-- [ ] Latency injection
-- [ ] Partial fill support
+*No items currently in progress*
 
 ---
 
@@ -205,6 +209,8 @@ PRATE (Prime-Resonant Adaptive Trading Ecology) - An adaptive trading system usi
 ## Testing Status
 
 ### Unit Tests
+- [x] **Feature engine tests** (technical indicators, microstructure features, regime classification)
+- [x] **Simulator tests** (order book, fill models, latency, funding)
 - [ ] Prime embedder tests
 - [ ] Operator tests (Π, E_τ, M)
 - [ ] Tau controller step response
@@ -216,7 +222,7 @@ PRATE (Prime-Resonant Adaptive Trading Ecology) - An adaptive trading system usi
 ### Integration Tests
 - [ ] End-to-end ecology loop
 - [ ] Memory encode/decode round-trip
-- [ ] Multi-step simulation
+- [x] **Multi-step simulation** (validated in test_enhancements.py)
 
 ### Validation
 - [ ] Walk-forward backtest protocol
@@ -240,9 +246,9 @@ Target metrics:
 
 ## Known Issues
 
-1. **Simulator**: Overly simplistic fill model (all orders fill immediately)
-2. **Feature Engine**: Placeholder implementations for many features
-3. **Regime Classification**: Uniform distribution placeholder
+1. ~~**Simulator**: Overly simplistic fill model (all orders fill immediately)~~ - **FIXED**: Now has realistic fill probability models, partial fills, latency injection
+2. ~~**Feature Engine**: Placeholder implementations for many features~~ - **FIXED**: Real technical indicators and microstructure features implemented
+3. ~~**Regime Classification**: Uniform distribution placeholder~~ - **FIXED**: Heuristic-based regime classification implemented
 4. **RL Module**: Not yet implemented
 5. **No persistent storage**: State not saved between runs
 6. **Limited error handling**: Many edge cases not covered
