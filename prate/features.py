@@ -3,6 +3,7 @@ Feature Engine for computing technical and microstructure features.
 """
 
 import numpy as np
+from datetime import datetime
 from typing import Dict, Any
 from .types import Observation, RegimeID
 
@@ -60,11 +61,13 @@ def make_discretizers(binning_specs: Dict[str, Dict[str, Any]]) -> Dict[str, Dis
 def compute_ema(values: list, period: int) -> float:
     """Compute Exponential Moving Average."""
     if len(values) < period:
-        return np.mean(values) if values else 0.0
+        # For insufficient data, return simple moving average as EMA approximation
+        return np.mean(values) if values else np.nan
     
     alpha = 2.0 / (period + 1)
-    ema = values[0]
-    for val in values[1:]:
+    # Initialize EMA with SMA of first 'period' values
+    ema = np.mean(values[:period])
+    for val in values[period:]:
         ema = alpha * val + (1 - alpha) * ema
     return ema
 
@@ -335,7 +338,6 @@ class FeatureEngine:
         current_volume = volumes[-1] if volumes else 0.0
         
         # Time of day bucket (0-23)
-        from datetime import datetime
         dt = datetime.fromtimestamp(ts / 1000.0)
         tod_bucket = dt.hour
         feats['tod'] = tod_bucket / 24.0  # Normalize to [0, 1]

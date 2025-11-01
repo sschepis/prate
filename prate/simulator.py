@@ -2,7 +2,7 @@
 Simulator for backtesting with fill models.
 """
 
-import random
+import numpy as np
 from typing import Dict, List, Optional, Any
 from .types import TradeIntent
 
@@ -60,20 +60,25 @@ class OrderBook:
 class FillModel:
     """Realistic fill probability model."""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, seed: Optional[int] = None):
         config = config or {}
         self.limit_fill_prob = config.get('limit_fill_prob', 0.7)
         self.market_fill_prob = config.get('market_fill_prob', 0.95)
         self.partial_fill_prob = config.get('partial_fill_prob', 0.3)
         self.min_fill_ratio = config.get('min_fill_ratio', 0.5)
+        
+        # Use numpy random for reproducibility
+        self.rng = np.random.default_rng(seed)
     
     def should_fill(self, intent: TradeIntent, current_price: float) -> bool:
         """Determine if order should fill."""
         if intent.price is None:
             # Market order
-            return random.random() < self.market_fill_prob
+            return self.rng.random() < self.market_fill_prob
         
         # Limit order - check if price is touched
+        # BUY limit: fill when market price is at or below limit
+        # SELL limit: fill when market price is at or above limit
         if intent.side.value == 'BUY':
             price_touched = current_price <= intent.price
         else:
@@ -82,7 +87,7 @@ class FillModel:
         if not price_touched:
             return False
         
-        return random.random() < self.limit_fill_prob
+        return self.rng.random() < self.limit_fill_prob
     
     def get_fill_ratio(self, intent: TradeIntent, available_volume: float) -> float:
         """Determine what fraction of order fills."""
@@ -90,7 +95,7 @@ class FillModel:
             return 1.0
         
         # Partial fill scenario
-        if random.random() < self.partial_fill_prob:
+        if self.rng.random() < self.partial_fill_prob:
             return max(self.min_fill_ratio, available_volume / intent.qty)
         
         return 1.0
@@ -99,17 +104,20 @@ class FillModel:
 class LatencyModel:
     """Simulates network and exchange latency."""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, seed: Optional[int] = None):
         config = config or {}
         self.mean_latency_ms = config.get('mean_latency_ms', 50)
         self.std_latency_ms = config.get('std_latency_ms', 20)
         self.min_latency_ms = config.get('min_latency_ms', 10)
+        
+        # Use numpy random for reproducibility
+        self.rng = np.random.default_rng(seed)
     
     def get_latency(self) -> int:
         """Get random latency in milliseconds."""
         latency = max(
             self.min_latency_ms,
-            int(random.gauss(self.mean_latency_ms, self.std_latency_ms))
+            int(np.round(self.rng.normal(self.mean_latency_ms, self.std_latency_ms)))
         )
         return latency
 
@@ -133,7 +141,8 @@ class Simulator:
         slippage_model: Optional[Dict[str, Any]] = None,
         fill_model_config: Optional[Dict[str, Any]] = None,
         latency_config: Optional[Dict[str, Any]] = None,
-        funding_config: Optional[Dict[str, Any]] = None
+        funding_config: Optional[Dict[str, Any]] = None,
+        seed: Optional[int] = None
     ):
         """
         Initialize simulator.
@@ -145,6 +154,7 @@ class Simulator:
             fill_model_config: Fill probability model config
             latency_config: Latency model config
             funding_config: Funding rate config
+            seed: Random seed for reproducibility
         """
         self.market_data = market_data
         self.fee_schedule = fee_schedule
@@ -159,10 +169,10 @@ class Simulator:
         self.pending_orders: Dict[str, Dict[str, Any]] = {}  # cid -> {intent, submit_ts}
         self.fills: List[Dict[str, Any]] = []
         
-        # Enhanced models
+        # Enhanced models with reproducible randomness
         self.order_book = OrderBook()
-        self.fill_model = FillModel(fill_model_config)
-        self.latency_model = LatencyModel(latency_config)
+        self.fill_model = FillModel(fill_model_config, seed)
+        self.latency_model = LatencyModel(latency_config, seed)
         
         # Funding rate simulation
         funding_config = funding_config or {}
@@ -280,30 +290,31 @@ class Simulator:
             new_position = self.position + qty_signed
             
             # Calculate PnL
+            eps = 1e-10  # Small epsilon for floating point comparison
             if old_position * new_position < 0:
                 # Position flip - close old and open new
                 close_qty = -old_position
                 open_qty = new_position
                 
                 # PnL from closing
-                if old_position != 0:
+                if abs(old_position) > eps:
                     close_pnl = close_qty * (fill_price - self.avg_entry_price)
                 else:
                     close_pnl = 0.0
                 
                 pnl = close_pnl - fee
-                self.avg_entry_price = fill_price if open_qty != 0 else 0.0
+                self.avg_entry_price = fill_price if abs(open_qty) > eps else 0.0
             elif abs(new_position) > abs(old_position):
                 # Increasing position
-                if old_position != 0:
+                if abs(old_position) > eps:
                     total_value = old_position * self.avg_entry_price + qty_signed * fill_price
-                    self.avg_entry_price = total_value / new_position if new_position != 0 else 0.0
+                    self.avg_entry_price = total_value / new_position if abs(new_position) > eps else 0.0
                 else:
                     self.avg_entry_price = fill_price
                 pnl = -fee
             else:
                 # Decreasing position (taking profit/loss)
-                if old_position != 0:
+                if abs(old_position) > eps:
                     pnl = qty_signed * (fill_price - self.avg_entry_price) - fee
                 else:
                     pnl = -fee
@@ -371,7 +382,8 @@ class Simulator:
         current_price = self._get_current_price()
         unrealized_pnl = 0.0
         
-        if self.position != 0 and self.avg_entry_price != 0:
+        eps = 1e-10  # Small epsilon for floating point comparison
+        if abs(self.position) > eps and abs(self.avg_entry_price) > eps:
             unrealized_pnl = self.position * (current_price - self.avg_entry_price)
         
         return {
