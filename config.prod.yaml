@@ -1,0 +1,23 @@
+# Production Environment Overrides
+
+# Production-grade settings
+logging:
+  level: WARNING
+  file: /var/log/prate/prate.log
+
+# Enable all monitoring
+monitoring:
+  enabled: true
+  dashboard_port: 8050
+
+# Conservative risk limits
+risk:
+  max_drawdown: 0.10
+  max_leverage: 2.0
+  daily_loss_limit: 0.03
+
+# Production execution
+execution:
+  mode: live
+  # IMPORTANT: Set actual API credentials via environment variables
+  # MEXC_API_KEY and MEXC_API_SECRET

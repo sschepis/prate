@@ -1,0 +1,92 @@
+# PRATE Default Configuration
+# Core settings for the Prime-Resonant Adaptive Trading Ecology
+
+# Prime configuration
+primes:
+  M: 100  # Number of primes to use
+
+# Hilbert embedding configuration
+embedding:
+  dim: 64  # Hilbert space dimension
+
+# Entropy thermostat (tau controller) configuration
+tau:
+  H_star: 2.5  # Target entropy
+  Kp: 0.1      # Proportional gain
+  Ki: 0.01     # Integral gain
+  tau_min: 0.1 # Minimum tau value
+  tau_max: 10.0 # Maximum tau value
+
+# Risk management configuration
+risk:
+  max_drawdown: 0.15        # Maximum allowed drawdown (15%)
+  max_position_size: 10000  # Maximum position size
+  max_leverage: 3.0         # Maximum leverage
+  daily_loss_limit: 0.05    # Daily loss limit (5%)
+
+# Bandit configuration
+bandit:
+  algorithm: thompson  # thompson or ucb
+  alpha: 1.0          # Prior alpha
+  beta: 1.0           # Prior beta
+
+# Phase learner configuration
+phase_learner:
+  learning_rate: 0.01    # Learning rate for phase updates
+  baseline_alpha: 0.1    # EMA alpha for baseline reward
+  k_sparse: 5            # Number of sparse features
+
+# Holographic memory configuration
+memory:
+  dim: 128              # Memory vector dimension
+  learning_rate: 0.05   # Memory update learning rate
+  decay_rate: 0.01      # Memory decay rate
+
+# Feature engine configuration
+features:
+  buffer_size: 1000     # Rolling buffer size
+  ema_periods: [10, 20, 50]  # EMA periods
+  rsi_period: 14        # RSI period
+  atr_period: 14        # ATR period
+  bb_period: 20         # Bollinger Bands period
+  bb_std: 2.0           # Bollinger Bands standard deviations
+
+# Simulator configuration
+simulator:
+  initial_balance: 100000  # Initial balance
+  fee_rate: 0.0004         # Trading fee rate (0.04%)
+  slippage_bps: 2          # Slippage in basis points
+
+# RL module configuration (if using)
+rl:
+  enabled: false
+  gamma: 0.99          # Discount factor
+  gae_lambda: 0.95     # GAE lambda
+  buffer_size: 10000   # Experience replay buffer size
+  batch_size: 64       # Training batch size
+  learning_rate: 0.0003 # Learning rate
+
+# Guild system configuration
+guilds:
+  enabled: true
+  guilds: [TF, MR, BR, LM]  # Active guilds
+
+# Execution configuration
+execution:
+  mode: simulation  # simulation or live
+  symbol: BTCUSDT   # Trading symbol
+  timeframe: 60     # Timeframe in seconds
+
+# Logging configuration
+logging:
+  level: INFO       # DEBUG, INFO, WARNING, ERROR
+  file: logs/prate.log
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  metrics_db: metrics.db
+  dashboard_port: 8050
+  update_interval: 5  # seconds

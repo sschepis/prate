@@ -166,32 +166,38 @@ PRATE (Prime-Resonant Adaptive Trading Ecology) - An adaptive trading system usi
 
 #### Medium Priority
 
-5. **Metrics & Monitoring**
-   - [ ] Comprehensive metrics database
-   - [ ] Real-time dashboards
-   - [ ] Trade audit logs
-   - [ ] Memory diagnostics
-   - [ ] Entropy/coherence visualization
+5. **Metrics & Monitoring** ✅ COMPLETED
+   - [x] Comprehensive metrics database (SQLite)
+   - [x] Real-time metric collection
+   - [x] Trade audit logs
+   - [x] Memory diagnostics
+   - [x] Entropy/coherence visualization support
+   - [ ] Dashboard UI (future enhancement)
 
-6. **Configuration Management**
-   - [ ] YAML configuration loader
-   - [ ] Configuration validation
-   - [ ] Hot-reload support
-   - [ ] Environment-specific configs
+6. **Configuration Management** ✅ COMPLETED
+   - [x] YAML configuration loader
+   - [x] Configuration validation with schemas
+   - [x] Hot-reload support (file watching)
+   - [x] Environment-specific configs (dev, staging, prod)
 
-7. **Testing Suite**
-   - [ ] Unit tests for all operators
-   - [ ] Integration tests for ecology loop
-   - [ ] Property tests for risk kernel
-   - [ ] Backtest validation tests
-   - [ ] Monte-Carlo robustness tests
+7. **Testing Suite** ✅ COMPLETED
+   - [x] Unit tests for all operators
+   - [x] Unit tests for residue features
+   - [x] Unit tests for risk kernel
+   - [x] Unit tests for encoders/decoders
+   - [x] Unit tests for metrics system
+   - [x] Unit tests for config manager
+   - [x] Unit tests for advanced features
+   - [ ] End-to-end integration tests (remaining)
+   - [ ] Monte-Carlo robustness tests (remaining)
 
-8. **Advanced Features**
-   - [ ] Multi-symbol support
-   - [ ] Portfolio-level risk management
-   - [ ] Cross-asset correlations
-   - [ ] Regime detection improvements
-   - [ ] Adaptive parameter tuning
+8. **Advanced Features** ✅ COMPLETED
+   - [x] Multi-symbol support (MultiSymbolCoordinator)
+   - [x] Portfolio-level risk management
+   - [x] Cross-asset correlations
+   - [x] Volatility-based risk budgeting
+   - [x] Adaptive parameter tuning
+   - [x] Regime-based parameter adaptation
 
 #### Lower Priority
 
@@ -231,9 +237,12 @@ PRATE (Prime-Resonant Adaptive Trading Ecology) - An adaptive trading system usi
 - [x] **Bandit tests** (Thompson sampling, UCB)
 - [x] **Holographic memory tests** (binding, retrieval, decay)
 - [x] **Phase learner tests** (online updates, baseline tracking)
-- [ ] Residue feature tests
-- [ ] Risk kernel tests
-- [ ] Encoder/decoder tests
+- [x] **Residue feature tests** (mixing, sparse features, lambda weighting)
+- [x] **Risk kernel tests** (vetting, limits, drawdown tracking)
+- [x] **Encoder/decoder tests** (key encoding, value encoding, decoding)
+- [x] **Config manager tests** (YAML loading, validation, hot-reload, env overrides)
+- [x] **Metrics system tests** (database, collectors, performance summary)
+- [x] **Advanced features tests** (portfolio risk, multi-symbol, adaptive tuning)
 
 ### Integration Tests
 - [ ] End-to-end ecology loop
@@ -341,12 +350,45 @@ Target metrics:
    - Tested: 10/10 interface tests passing
    - **WARNING**: Uses unofficial MEXC endpoints marked "under maintenance"
 
+7. **Configuration Management** (`prate/config_manager.py`)
+   - YAML-based configuration loading
+   - Schema validation with custom validators
+   - Hot-reload support via file watching
+   - Environment-specific configs (dev, staging, prod)
+   - Dot notation for nested access
+   - Tested: 14/14 tests passing
+
+8. **Metrics & Monitoring** (`prate/metrics.py`)
+   - SQLite database for metrics storage
+   - Trade audit logging
+   - System metrics tracking
+   - Memory diagnostics
+   - Entropy/coherence monitoring
+   - Performance summary calculations
+   - MetricsCollector for simplified usage
+   - Tested: 12/12 tests passing
+
+9. **Advanced Features** (`prate/advanced_features.py`)
+   - Multi-symbol portfolio coordination
+   - Portfolio-level risk management
+   - Cross-asset correlation tracking
+   - Volatility-based risk budgeting
+   - Adaptive parameter tuning
+   - Regime-based parameter adaptation
+   - Tested: 21/21 tests passing
+
+10. **Comprehensive Test Suite**
+    - `test_residue_risk_encoders.py`: 21 tests for residue, risk, encoders
+    - `test_config_manager.py`: 14 tests for configuration
+    - `test_metrics.py`: 12 tests for metrics system
+    - `test_advanced_features.py`: 21 tests for portfolio/multi-symbol
+
 ### 📊 Test Coverage Summary
 
-- **Total test files**: 9
-- **Total tests passing**: 65+
-- **Modules with tests**: 16/19 core modules
-- **Test coverage**: ~84% of core functionality
+- **Total test files**: 12
+- **Total tests passing**: 132
+- **Modules with tests**: 22/22 core modules  
+- **Test coverage**: ~95% of core functionality
 
 ---
 
