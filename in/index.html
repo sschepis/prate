@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoTrader Pro 🚀📊</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
+    <!-- Sticky Header -->
+    <div class="flex-shrink-0">
+        <custom-navbar></custom-navbar>
+        <news-ticker></news-ticker>
+    </div>
+    
+    <!-- Main Content Area - No Scroll, Everything Fits -->
+    <div class="flex-1 min-h-0 px-2 py-2 flex flex-col lg:flex-row gap-2">
+        <!-- Left Side: Main Chart Area and Order Book -->
+        <div class="flex-1 min-w-0 min-h-0 flex flex-col lg:flex-row gap-2">
+          <!-- Chart Section -->
+          <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
+            <!-- Chart Panel -->
+            <div class="flex-1 min-h-0 bg-gray-800 rounded-lg shadow-xl overflow-hidden flex flex-col">
+                <!-- Chart Tabs -->
+                <div class="flex-shrink-0 flex border-b border-gray-700">
+                    <button class="px-4 py-2 font-medium text-blue-400 border-b-2 border-blue-400">
+                        <span class="price-ticker">BTC/USDT</span>
+                        <span class="live-price text-xs ml-1 text-green-400">25,432.12 ▲</span>
+                    </button>
+                    <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200">ETH/USDT</button>
+                    <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200">SOL/USDT</button>
+                    <div class="flex-1"></div>
+                    <button class="px-4 py-2 text-gray-400 hover:text-gray-200">
+                        <i data-feather="plus"></i>
+                    </button>
+                </div>
+                <!-- TradingView Widget - Takes remaining space -->
+                <div class="flex-1 min-h-0">
+                    <div id="tradingview-chart" class="w-full h-full"></div>
+                </div>
+                <!-- Chart Controls -->
+                <div class="flex-shrink-0 p-2 bg-gray-800 border-t border-gray-700 flex items-center justify-between">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600">
+                            <i data-feather="settings"></i>
+                        </button>
+                        <button class="px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600">
+                            <i data-feather="bar-chart-2"></i>
+                        </button>
+                        <button class="px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600">
+                            <i data-feather="trending-up"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600">
+                            <i data-feather="clock"></i>
+                        </button>
+                        <button class="px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600">
+                            <i data-feather="maximize"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Tabs Panel -->
+            <div class="h-48 flex-shrink-0 bg-gray-800 rounded-lg shadow-xl overflow-hidden flex flex-col">
+                <div class="flex-shrink-0 flex border-b border-gray-700 overflow-x-auto">
+                    <button class="px-4 py-2 font-medium text-blue-400 border-b-2 border-blue-400 whitespace-nowrap">Orders</button>
+                    <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200 whitespace-nowrap">Positions</button>
+                    <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200 whitespace-nowrap">History</button>
+                    <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200 whitespace-nowrap">Trading Bot</button>
+            <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200 whitespace-nowrap">Market Scanner</button>
+            <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200 whitespace-nowrap">Custom Indicator</button>
+            <button class="px-4 py-2 font-medium text-gray-400 hover:text-gray-200 whitespace-nowrap">Markets Grid</button>
+</div>
+                <div class="flex-1 min-h-0 overflow-auto p-3">
+                    <div class="overflow-x-auto hidden" data-tab-content="orders">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 text-left border-b border-gray-700">
+                                    <th class="pb-2">Date</th>
+                                    <th class="pb-2">Pair</th>
+                                    <th class="pb-2">Type</th>
+                                    <th class="pb-2">Side</th>
+                                    <th class="pb-2">Price</th>
+                                    <th class="pb-2">Amount</th>
+                                    <th class="pb-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-700 hover:bg-gray-700">
+                                    <td class="py-2">2023-06-15 14:32</td>
+                                    <td>BTC/USDT</td>
+                                    <td>Limit</td>
+                                    <td class="text-green-400">Buy</td>
+                                    <td>25,432.12</td>
+                                    <td>0.05</td>
+                                    <td class="text-blue-400">Filled</td>
+                                </tr>
+                                <tr class="border-b border-gray-700 hover:bg-gray-700">
+                                    <td class="py-2">2023-06-15 09:47</td>
+                                    <td>ETH/USDT</td>
+                                    <td>Market</td>
+                                    <td class="text-red-400">Sell</td>
+                                    <td>1,832.45</td>
+                                    <td>1.2</td>
+                                    <td class="text-blue-400">Filled</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="hidden" data-tab-content="positions">
+                        <div class="text-gray-400 text-center py-4 text-sm">No open positions</div>
+                    </div>
+                    <div class="hidden" data-tab-content="history">
+                        <div class="text-gray-400 text-center py-4 text-sm">No trade history</div>
+                    </div>
+                    <div class="hidden" data-tab-content="bot">
+                        <tradingbot-panel></tradingbot-panel>
+                    </div>
+                    <div class="hidden" data-tab-content="scanner">
+                        <market-scanner></market-scanner>
+                    </div>
+                    <div class="hidden" data-tab-content="indicator">
+                        <custom-indicator></custom-indicator>
+                    </div>
+                    <div class="hidden" data-tab-content="grid">
+                        <markets-grid></markets-grid>
+                    </div>
+</div>
+            </div>
+          </div>
+          
+          <!-- Order Book -->
+          <div class="lg:w-64 flex-shrink-0 bg-gray-800 rounded-lg shadow-xl overflow-hidden flex flex-col">
+            <order-book></order-book>
+          </div>
+        </div>
+        
+        <!-- Right Sidebar: Order Panel and Market Data -->
+        <div class="w-full lg:w-80 flex-shrink-0 min-h-0 overflow-y-auto">
+            <div class="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+
+                <!-- Order Form -->
+                <div class="p-3 border-b border-gray-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-base">New Order</h3>
+                        <div class="flex gap-1">
+                            <button class="px-2 py-1 bg-blue-600 rounded-md text-xs font-medium">Limit</button>
+                            <button class="px-2 py-1 bg-gray-700 rounded-md text-xs font-medium hover:bg-gray-600">Market</button>
+                            <button class="px-2 py-1 bg-gray-700 rounded-md text-xs font-medium hover:bg-gray-600">Stop</button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Amount</label>
+                            <div class="relative">
+                                <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                                <div class="absolute right-3 top-2 text-xs text-gray-400">BTC</div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Price</label>
+                            <input type="number" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="py-2 bg-green-600 rounded-md font-medium text-sm hover:bg-green-700">Buy</button>
+                            <button class="py-2 bg-red-600 rounded-md font-medium text-sm hover:bg-red-700">Sell</button>
+                        </div>
+                        
+                        <div class="pt-2 border-t border-gray-700">
+                            <div class="flex justify-between text-xs text-gray-400">
+                                <span>Available:</span>
+                                <span>5,432.12 USDT</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Market Data -->
+                <div class="p-3">
+                    <h3 class="font-bold text-base mb-2">Market Data</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Price</span>
+                            <span class="font-medium">25,432.12</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">24h Change</span>
+                            <span class="text-green-400">+2.34%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">24h High</span>
+                            <span>25,678.90</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">24h Low</span>
+                            <span>24,543.21</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">24h Volume</span>
+                            <span>1,234.56 BTC</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Price Alerts -->
+            <price-alerts></price-alerts>
+
+            <!-- Open Positions -->
+            <div class="mt-2 bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+                <div class="p-3 border-b border-gray-700">
+                    <h3 class="font-bold text-base">Open Positions</h3>
+                </div>
+                <div class="p-3">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <div>
+                                <div class="font-medium">BTC/USDT</div>
+                                <div class="text-xs text-gray-400">Long 0.05 BTC</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-green-400 font-medium">+$124.32 (+2.1%)</div>
+                                <div class="text-xs text-gray-400">25,432.12</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sticky Application Footer with Bot Status -->
+    <footer class="flex-shrink-0 w-full bg-gray-800 border-t border-gray-700">
+        <div class="px-4 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- Bot Status Section -->
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium text-gray-300">Trading Bot: <span class="text-green-400">Active</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-feather="activity" class="w-4 h-4 text-blue-400"></i>
+                        <span class="text-sm text-gray-400">3 Active Strategies</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-feather="trending-up" class="w-4 h-4 text-green-400"></i>
+                        <span class="text-sm text-gray-400">P&L Today: <span class="text-green-400">+$234.56</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-feather="zap" class="w-4 h-4 text-yellow-400"></i>
+                        <span class="text-sm text-gray-400">Last Trade: 2m ago</span>
+                    </div>
+                </div>
+                
+                <!-- System Status Section -->
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span class="text-sm text-gray-400">API: Connected</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span class="text-sm text-gray-400">WebSocket: Live</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-feather="clock" class="w-4 h-4 text-gray-400"></i>
+                        <span class="text-sm text-gray-400" id="current-time">00:00:00 UTC</span>
+                    </div>
+                    <button class="text-sm text-gray-400 hover:text-gray-200 flex items-center gap-1">
+                        <i data-feather="settings" class="w-4 h-4"></i>
+                        Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="components/navbar.js"></script>
+    <script src="components/news-ticker.js"></script>
+    <script src="components/price-alerts.js"></script>
+    <script src="components/quick-trade.js"></script>
+    <script src="components/tradingbot-panel.js"></script>
+    <script src="components/market-scanner.js"></script>
+    <script src="components/custom-indicator.js"></script>
+    <script src="components/order-book.js"></script>
+    <script src="components/markets-grid.js"></script>
+<script src="script.js"></script>
+    <script>
+        feather.replace();
+        
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toUTCString().split(' ')[4];
+            document.getElementById('current-time').textContent = timeString + ' UTC';
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Initialize TradingView widget
+        new TradingView.widget({
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": "15",
+            "timezone": "Etc/UTC",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": "#1e293b",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview-chart"
+        });
+    </script>
+    <script src="https://huggingface.co/deepsite/deepsite-badge.js"></script>
+</body>
+</html>
