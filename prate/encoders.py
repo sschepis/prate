@@ -13,7 +13,10 @@ def _seeded_phase(seed_bytes: bytes, p: int, two_pi: float = 2 * np.pi) -> float
         np.uint64(np.abs(hash(seed_bytes)) & ((1 << 63) - 1)).tobytes(),
         dtype=np.uint64
     )[0]
-    return two_pi * ((h ^ np.uint64(p * 1469598103934665603)) % (10 ** 6)) / 1_000_000.0
+    # Use modulo to prevent overflow
+    mix_val = int(p) * 1469598103934665603
+    h_mixed = int(h) ^ (mix_val & 0xFFFFFFFFFFFFFFFF)
+    return two_pi * ((h_mixed % (10 ** 6)) / 1_000_000.0)
 
 
 def encode_key(
