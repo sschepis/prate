@@ -13,6 +13,7 @@ import time
 import hmac
 import hashlib
 import json
+import logging
 from typing import Dict, List, Optional, Any, Callable
 from urllib.parse import urlencode
 import requests
@@ -29,6 +30,9 @@ from .execution_interface import (
     Side,
     MarginMode
 )
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 class MEXCFuturesAuth:
@@ -174,10 +178,10 @@ class MEXCFuturesREST:
             return response.json()
         
         except requests.exceptions.RequestException as e:
-            print(f"MEXC API request error: {e}")
+            logger.error(f"MEXC API request error: {e}")
             return None
         except Exception as e:
-            print(f"Unexpected error in MEXC API request: {e}")
+            logger.exception(f"Unexpected error in MEXC API request: {e}")
             return None
     
     def create_order(
@@ -351,7 +355,7 @@ class MEXCFuturesExecution(ExecutionInterface):
                 return True
             return False
         except Exception as e:
-            print(f"Connection failed: {e}")
+            logger.error(f"Connection failed: {e}")
             return False
     
     def disconnect(self) -> None:
@@ -418,18 +422,20 @@ class MEXCFuturesExecution(ExecutionInterface):
     ) -> Optional[Order]:
         """Create a new order on MEXC."""
         if not self._connected:
-            print("Not connected to MEXC")
+            logger.warning("Not connected to MEXC - cannot create order")
             return None
         
         # Set defaults
         leverage = leverage or 10
         margin_mode = margin_mode or MarginMode.ISOLATED
         
-        # For market orders, use current market price as placeholder
+        # For market orders, price must be specified even though it's not used
+        # In production, should fetch current market price from ticker
         if order_type == OrderType.MARKET and price is None:
-            # In production, should fetch current market price
-            # For now, using a placeholder
-            price = 50000.0  # This should be fetched from market data
+            raise ValueError(
+                "Price must be specified for MEXC market orders. "
+                "Fetch current market price from ticker data first."
+            )
         
         mexc_side = self._convert_side_to_mexc(side, kwargs.get('is_close', False))
         mexc_type = self._convert_order_type_to_mexc(order_type)
@@ -566,14 +572,16 @@ class MEXCFuturesExecution(ExecutionInterface):
         # Need to get position_id first
         position = self.get_position(symbol)
         if not position:
-            print(f"No position found for {symbol}")
+            logger.warning(f"No position found for {symbol}")
             return False
         
         # This is a simplified implementation
         # In reality, need to extract position_id from MEXC response
-        # For now, returning False as we need position_id
-        print("set_leverage requires position_id from MEXC - not fully implemented")
-        return False
+        # For now, raising NotImplementedError
+        raise NotImplementedError(
+            "set_leverage requires position_id from MEXC position response. "
+            "This needs to be extracted from the position data structure."
+        )
     
     def get_balance(self) -> Optional[Balance]:
         """Get account balance."""
@@ -602,8 +610,10 @@ class MEXCFuturesExecution(ExecutionInterface):
         """Get trade execution history."""
         # This would require additional MEXC API endpoints
         # Not implemented in this basic version
-        print("get_trade_history not implemented for MEXC")
-        return []
+        raise NotImplementedError(
+            "get_trade_history not yet implemented for MEXC. "
+            "Requires additional API endpoint integration."
+        )
     
     def _parse_order_type(self, mexc_type: int) -> OrderType:
         """Parse MEXC order type to OrderType enum."""

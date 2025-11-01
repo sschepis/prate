@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
-from .types import TradeIntent, Side
+from .types import Side
 
 
 class OrderStatus(Enum):
