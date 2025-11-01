@@ -3,7 +3,7 @@ Holographic memory using complex-valued Holographic Reduced Representations (HRR
 """
 
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 
 def fft_circ_conv(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -24,7 +24,7 @@ class HoloMemory:
     and correlation-based retrieval in the frequency domain.
     """
     
-    def __init__(self, P: list[int], gamma: float, eta: float):
+    def __init__(self, P: List[int], gamma: float, eta: float):
         """
         Initialize holographic memory.
         

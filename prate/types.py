@@ -4,7 +4,7 @@ Type definitions for PRATE system.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import numpy as np
 
 
@@ -87,4 +87,4 @@ class TradeIntent:
 class Basis:
     """Basis subset of primes."""
     id: str
-    primes: list[int]
+    primes: List[int]

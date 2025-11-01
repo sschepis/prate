@@ -3,11 +3,11 @@ Prime-Hilbert embedding for market observations.
 """
 
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 from .types import Observation
 
 
-def p_index(p: int, P: list[int]) -> int:
+def p_index(p: int, P: List[int]) -> int:
     """Get index of prime p in prime list P."""
     return P.index(p)
 
@@ -29,7 +29,7 @@ class PrimeEmbedder:
     Maps discretized integer features to prime-indexed amplitudes and phases.
     """
     
-    def __init__(self, primes: list[int], M: int):
+    def __init__(self, primes: List[int], M: int):
         """
         Initialize embedder with first M primes.
         

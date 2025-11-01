@@ -3,7 +3,7 @@ Phase learner for online φ updates based on reward feedback.
 """
 
 import numpy as np
-from typing import Dict, Set
+from typing import Dict, Set, List
 from .embedding import wrap_angle_arr
 
 
@@ -16,7 +16,7 @@ class PhaseLearner:
     
     def __init__(
         self, 
-        P: list[int], 
+        P: List[int], 
         eta0: float, 
         protected: Set[int] = None
     ):
