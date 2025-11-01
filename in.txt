@@ -1,0 +1,1143 @@
+Design Document
+
+Prime-Resonant Adaptive Trading Ecology (PRATE)
+
+1. Overview
+
+The PRATE architecture models trading as an entropy-minimizing observer ecology operating in a financial environment.
+Each observer is an integer-program agent embedded in a prime-indexed Hilbert space; its dynamics follow the operators
+\Pi (projection), E_\tau (entropy collapse), and M (measurement-to-action).
+Continuous adaptation, phase learning, and holographic memory supply non-stop improvement from market feedback.
+
+O_i : \mathbb{Z}^k \to \mathbb{Z}, \qquad n_i = O_i(s_i,\theta_i,\xi_i)
+
+The ecology evolves toward coherent low-entropy policies that maximize long-term expected utility (profit adjusted for risk).
+
+⸻
+
+2. Mathematical Core
+
+2.1 Prime-Hilbert Embedding
+
+Let P=\{p_1,\dots,p_M\} be the first M primes.
+Each discretized market observation x_t\in\mathbb{Z} is embedded as
+\Psi(x_t)=\{p\mapsto(a_p(x_t),\phi_p(x_t))\}_{p\in P},
+with
+a_p(x_t)=1-\frac{x_t\bmod p}{p}, \qquad
+\phi_p(x_t)=\frac{2\pi(x_t\bmod p+\phi_p)}{p}.
+
+2.2 Operators
+
+\Pi_B\Psi = \{(a_p,\phi_p)\mid p\in B\},\qquad
+E_\tau(\Psi)=\text{soft-top-}k(\Psi,H(\Psi)\le\tau),\qquad
+M(\Psi)=\text{mix}(a_p,\phi_p)\mapsto m.
+The composite refinement is R(n_0)=f(n_0,M(E_\tau\circ\Pi_B\Psi)).
+
+2.3 Reward Functional
+
+For a trade or action a_t:
+r_t=\Delta \text{PnL}t
+-\lambda_f c_t
+-\lambda_s|\Delta q_t|
+-\lambda_v\text{Var}(\text{PnL}){t:t+T}
+-\lambda_d\mathbf{1}_{\text{drawdown}}.
+Expected discounted return J=\mathbb{E}[\sum_t \gamma^t r_t] defines the learning objective.
+
+2.4 Phase-Learning Update
+
+\phi_{p}\leftarrow \phi_p+\eta_t(r_t-\bar r_t)\,\mathrm{Residue}_p(a_t).
+
+2.5 Entropy Thermostat
+
+Maintain H(\Psi_t)\approx H^ via
+\tau_{t+1}=\tau_t-k_P(H(\Psi_t)-H^)-k_I\sum_{u\le t}(H(\Psi_u)-H^*).
+
+2.6 Bandit-Style Basis Selection
+
+Each candidate basis B_j\subset P has posterior mean reward \hat R_j;
+select by Thompson or UCB sampling:
+B_t=\arg\max_j(\hat R_j+\beta\sqrt{2\ln t / n_j}).
+
+2.7 Holographic Memory
+
+Memory tensor \mathcal H_B\in\mathbb{C}^{|P|} accumulates bound key-value pairs:
+M_t=K_t\circledast V_t,\quad
+\mathcal H_B\leftarrow \gamma \mathcal H_B+\eta M_t,\quad
+\hat V_t=\mathrm{corr}(K_q,\mathcal H_B).
+
+Keys encode context (regime, symbol, features); values encode profitable parameter deltas.
+
+⸻
+
+3. System Architecture
+
+Layer	Function
+Data Ingestion	Websocket or CSV replay; candles, order-book, funding, trades.
+Feature Engine	Computes technical and microstructure features, discretizes to integers for embedding.
+Ecology Core	Manages guilds, phase vectors, τ controllers, Π-bandits, HilbertRefine loop.
+RL Module	PPO/SAC head for continuous param optimization inside each style.
+Holographic Memory	Complex-phase associative store for context→strategy recall.
+Risk Kernel	KAM protection: leverage, exposure, drawdown, latency guards.
+Execution Interface	Abstract API to send/cancel orders (stubbed in simulation).
+Persistence & Dashboard	Metrics DB, entropy/coherence graphs, trade audit, PnL, memory diagnostics.
+
+
+⸻
+
+4. Guild Structure
+
+Guild	Strategy Archetype	Primary Primes B	Reward Bias
+G_{\text{TF}}	Trend-follow	small primes (2–31)	momentum
+G_{\text{MR}}	Mean-revert	mid primes (37–97)	reversion
+G_{\text{BR}}	Breakout	high primes	volatility expansion
+G_{\text{LM}}	Liquidity make	mixed	fee rebates
+G_{\text{FA}}	Funding carry	selected by period of funding cycle	carry yield
+G_{\text{OBS}}	Observation / explore	random	information gain
+
+Guilds share telemetry of top-k supports, coherence, and τ deviations every T_{\text{sync}} seconds.
+
+⸻
+
+5. RL Integration
+
+State s_t=(o_t,\Psi_t,\phi_B,H(\Psi_t),B), action a_t=(\Delta q,\text{style params}), reward r_t as above.
+Actor–critic optimizes continuous parameters while the ecology handles discrete style selection and phase evolution.
+
+Gradient step:
+\nabla_\theta J = \mathbb{E}t[\nabla\theta \log \pi_\theta(a_t|s_t)A_t].
+The advantage A_t=r_t+γV(s_{t+1})-V(s_t) is entropy-regularized by E_\tau.
+
+⸻
+
+6. Risk and Capital Formalism
+
+\text{Position size } f_i = \min\left(f_{\max},\kappa\frac{\mu_i}{\sigma_i^2}\right),\qquad
+\text{VaR}{99} < R{\max},\qquad
+\text{DD}{\text{daily}}<D{\max}.
+Stops =\alpha \cdot \text{ATR}; time-outs =T_{\max}.
+Entropy thermostat freezes adaptation when risk metrics breach limits.
+
+⸻
+
+7. Algorithmic Loop (Sim / Paper Mode)
+
+\begin{enumerate}
+\item Observe $o_t$, embed $\Psi_t=\text{PrimeEmbed}(o_t,P,\phi_B)$.
+\item Retrieve $V_{\text{prior}}$ from $\mathcal H_B$.
+\item Select basis $B_t$ via bandit; adjust $\tau_t$ by controller.
+\item Generate base proposal $n_0$ from policy; refine $n=R(n_0;\Psi_t)$.
+\item Evaluate trade in simulator; obtain $r_t$.
+\item Update $\phi_B,\tau_t$, bandit posteriors, holographic memory.
+\item Apply KAM protection and risk constraints.
+\end{enumerate}
+
+⸻
+
+8. Performance Metrics
+	•	Financial: Net PnL, Sharpe/Sortino, max drawdown, hit rate, expectancy.
+	•	Structural: H(\Psi), coherence, τ-error, φ-drift, bandit regret.
+	•	Memory: retrieval lift, interference ratio, novelty index.
+
+⸻
+
+9. Security and Compliance
+
+All exchange connectivity is external to the model core.
+The PRATE system outputs trade intents (side, size, price, validity).
+Execution and custody components must implement:
+	•	API key isolation and encryption
+	•	Compliance with exchange rate limits
+	•	Independent risk limits enforced before any live order
+
+⸻
+
+10. Implementation Stack
+
+Component	Suggested Tech
+Core / RL	Python (NumPy, PyTorch, JAX)
+Feature Engine	Rust or C++ for speed; bindings to Python
+Holographic Memory	Complex tensor ops on GPU (cuFFT)
+Dashboard	FastAPI + React/Vue (optional)
+Persistence	PostgreSQL / Parquet for metrics
+Backtester	Vectorized Python, Cython core for fills
+
+
+⸻
+
+11. Validation Plan
+	1.	Unit tests for operators Π, E, M, τ-controller stability.
+	2.	Backtest validation on 1-s or 1-m bars; walk-forward splits.
+	3.	Monte-Carlo robustness: parameter perturbations, random latency, fee noise.
+	4.	Paper-trading trial: live data, simulated execution.
+	5.	Audit: confirm risk invariants and entropy bounds before any real trade interface.
+
+⸻
+
+12. Expected Outcomes
+	•	Adaptive trading system that shifts between regimes through prime-phase resonance.
+	•	Continuous online improvement from entropy feedback.
+	•	Holographic recall of profitable contexts enabling few-shot regime adaptation.
+	•	Stable long-term behavior due to KAM protection and entropy thermostats.
+
+⸻
+
+13. Next Steps
+	1.	Implement the simulation/backtest core with all mathematical modules above.
+	2.	Train RL + ecology on historical data.
+	3.	Validate metrics offline.
+	4.	Only after successful audits, connect to your exchange layer under separate, human-approved risk controls.
+
+⸻
+
+PRATE Module Interfaces & Pseudocode
+
+0) Global Types & Conventions
+
+Time           := int | datetime           # exchange/server epoch milliseconds
+Symbol         := str                      # e.g., "BTCUSDT"
+Side           := enum{BUY, SELL}
+Venue          := str                      # e.g., "MEXC"
+PrimeIndex     := int                      # p ∈ P (first M primes)
+BasisID        := str                      # name/uid of a basis subset B⊆P
+GuildID        := enum{TF, MR, BR, LM, FA, OBS}
+RegimeID       := enum{TREND, RANGE, VOLX, QUIET, UNKNOWN}
+
+Observation o_t:
+  - ts: Time
+  - symbol: Symbol
+  - mid, bid, ask: float
+  - spread: float
+  - last_px, last_qty: float
+  - vol_1s, vol_1m: float
+  - book_imbalance, pressure, realized_var, atr, rsi_short, ema_slope: float
+  - inventory, equity, unrealized_pnl: float
+  - funding_rate, time_of_day_bucket: float|int
+  - regime_soft: dict{RegimeID: float}     # soft scores ∈ [0,1]
+  - features_vec: np.ndarray[float, F]     # packed numeric features (continuous)
+  - features_disc: dict[str,int]           # discretized feature IDs for prime embed
+
+Action a_t:
+  - style: GuildID
+  - delta_q: float        # target position delta
+  - params: dict[str, float|int]  # style-specific knobs (limit_offset_bps, stop_k_ATR, tp_k_ATR, hold_secs, grid_width, etc.)
+
+TradeIntent:
+  - symbol, side, qty, price, tif, post_only, client_id, meta
+
+Reward r_t: float
+
+
+⸻
+
+1) Feature Engine
+
+1.1 Interface
+
+class FeatureEngine:
+    def update(self, tick: dict) -> None: ...
+    def snapshot(self, ts: Time, symbol: Symbol) -> Observation: ...
+
+1.2 Responsibilities
+	•	Maintain rolling windows for microstructure and technicals.
+	•	Produce both continuous features (features_vec) and discretized integers (features_disc) for prime embedding.
+
+1.3 Pseudocode
+
+class FeatureEngine:
+    def __init__(self, cfg):
+        self.buffers = RollingBuffers(cfg.windows)
+        self.discretizers = make_discretizers(cfg.binning_specs)
+
+    def update(self, tick):
+        self.buffers.update(tick)
+
+    def snapshot(self, ts, symbol) -> Observation:
+        feats = compute_features(self.buffers)      # EMA, RSI, ATR, vol, pressure, etc.
+        regime_soft = regime_scores(feats)          # soft labels via small classifier
+        features_disc = {
+            "ret_bucket": self.discretizers["ret"].bin(feats.ret_1s),
+            "imb_bucket": self.discretizers["imb"].bin(feats.book_imb),
+            "regime_id":  self.discretizers["regime"].bin(argmax(regime_soft)),
+            "tod_bucket": self.discretizers["tod"].bin(feats.tod),
+        }
+        return Observation(ts=ts, symbol=symbol, **feats, regime_soft=regime_soft,
+                           features_vec=np.array(feats.as_list()),
+                           features_disc=features_disc)
+
+
+⸻
+
+2) Prime-Hilbert Embedding
+
+2.1 Interface
+
+class PrimeEmbedder:
+    def __init__(self, primes: list[int], M: int):
+        self.P = primes[:M]            # first M primes
+    def embed(self, o: Observation, phi: np.ndarray) -> dict[int, tuple[float,float]]:
+        """Return Ψ: map p -> (a_p, φ_p)"""
+
+2.2 Formalism
+
+For integers x \in \mathbb{Z} derived from features_disc (e.g., ret_bucket, imb_bucket, regime_id, tod_bucket), compute:
+a_p(x) = 1 - (x \bmod p)/p,\qquad
+\phi_p(x) = 2\pi (x \bmod p + \phi_p)/p
+Aggregate across selected integer features (e.g., mean or norm of amplitudes, wrapped phases).
+
+2.3 Pseudocode
+
+class PrimeEmbedder:
+    def embed(self, o, phi):
+        ints = [o.features_disc[k] for k in sorted(o.features_disc)]
+        Ψ = {}
+        for p in self.P:
+            a_sum, φ_sum = 0.0, 0.0
+            for x in ints:
+                r = x % p
+                a_sum += 1.0 - r / p
+                φ_sum += 2.0 * np.pi * (r + phi[p_index(p)]) / p
+            Ψ[p] = (a_sum / len(ints), wrap_angle(φ_sum / len(ints)))
+        return Ψ
+
+
+⸻
+
+3) Hilbert Operators (Π, Eτ, M) & Refinement
+
+3.1 Interfaces
+
+class Basis:
+    id: BasisID
+    primes: list[int]          # B ⊆ P
+
+class Operators:
+    def project(self, Ψ, B: Basis): ...
+    def collapse(self, ΨB, tau: float): ...
+    def measure(self, ΨB) -> int: ...     # 32-bit mixer
+    def refine(self, n0: dict, Ψ, B, tau) -> dict:
+        # returns refined continuous params + order hints
+
+3.2 Pseudocode
+
+class Operators:
+    def project(self, Ψ, B):
+        return {p: Ψ[p] for p in B.primes}
+
+    def collapse(self, ΨB, tau):
+        # compute entropy H(ΨB), soft-top-k until H<=tau
+        ranked = sorted(ΨB.items(), key=lambda kv: kv[1][0], reverse=True)
+        kept = {}
+        H = +np.inf
+        for p,(a,φ) in ranked:
+            kept[p]=(a,φ)
+            H = hilbert_entropy(kept)
+            if H <= tau: break
+        return kept
+
+    def measure(self, ΨB):
+        # Map amplitudes/phases to a deterministic 32-bit int
+        h = 2166136261
+        for p,(a,φ) in ΨB.items():
+            h ^= (int(a*1e6) + int(φ*1e6) + p)
+            h *= 16777619
+        return h & 0xffffffff
+
+    def refine(self, n0, Ψ, B, tau):
+        ΨB = self.project(Ψ, B)
+        ΨB = self.collapse(ΨB, tau)
+        m  = self.measure(ΨB)
+        return fuse(n0, m, ΨB)  # style-specific mapping to params
+
+
+⸻
+
+4) Bandit for Basis/Style Selection
+
+4.1 Interface
+
+class BasisBandit:
+    def __init__(self, candidates: list[Basis], algo="thompson"):
+        ...
+    def sample_with_prior(self, prior: dict[BasisID,float]|None) -> Basis: ...
+    def update(self, basis_id: BasisID, reward: float) -> None: ...
+
+4.2 Pseudocode
+
+class BasisBandit:
+    def sample_with_prior(self, prior=None):
+        scores = []
+        for B in self.candidates:
+            μ,σ = self.posteriors[B.id]
+            draw = np.random.normal(μ, max(σ,1e-6))
+            if prior and B.id in prior:
+                draw += prior[B.id]
+            scores.append((draw, B))
+        return max(scores, key=lambda x:x[0])[1]
+
+    def update(self, basis_id, r):
+        # Bayesian or UCB posterior update
+        μ, n = self.stats[basis_id]
+        n2 = n+1
+        μ2 = μ + (r-μ)/n2
+        self.stats[basis_id]=(μ2,n2)
+        self.posteriors[basis_id]=recompute_posterior(μ2,n2)
+
+
+⸻
+
+5) Entropy Thermostat (τ Controller)
+
+5.1 Interface
+
+class TauController:
+    def __init__(self, H_star: float, kP: float, kI: float, bounds: tuple[float,float]):
+        ...
+    def step(self, H_now: float) -> float: ...
+
+5.2 Pseudocode
+
+class TauController:
+    def step(self, H_now):
+        e = H_now - self.H_star
+        self.e_int += e
+        tau = self.tau - self.kP*e - self.kI*self.e_int
+        self.tau = clip(tau, *self.bounds)
+        return self.tau
+
+
+⸻
+
+6) Phase Learner (Online φ Update)
+
+6.1 Interface
+
+class PhaseLearner:
+    def __init__(self, P: list[int], eta0: float, protected: set[PrimeIndex]):
+        self.phi = np.zeros(len(P))
+        self.t = 0
+        self.protected = protected
+    def step(self, reward: float, baseline: float, residue_feats: dict[int,float]) -> np.ndarray:
+        ...
+
+6.2 Pseudocode
+
+class PhaseLearner:
+    def step(self, reward, baseline, residue_feats):
+        self.t += 1
+        eta_t = self.eta0 / np.sqrt(self.t)
+        adv = reward - baseline
+        dphi = np.zeros_like(self.phi)
+        for p_idx, v in residue_feats.items():
+            if p_idx in self.protected:
+                continue
+            dphi[p_idx] += eta_t * adv * v
+        self.phi = wrap_angle_arr(self.phi + dphi)
+        return self.phi
+
+Residue features can be built from (state_code % p) and (action_code % p) top-k channels.
+
+⸻
+
+7) Holographic Memory (Complex HRR)
+
+7.1 Interface
+
+class HoloMemory:
+    def __init__(self, P: list[int], gamma: float, eta: float):
+        self.H = np.zeros(len(P), dtype=np.complex128)
+    def bind(self, K: np.ndarray, V: np.ndarray) -> np.ndarray: ...
+    def correlate(self, Kq: np.ndarray) -> np.ndarray: ...
+    def write(self, K, V, gain: float=1.0) -> None: ...
+    def read(self, Kq) -> np.ndarray: ...
+
+7.2 Pseudocode
+
+def fft_circ_conv(x, y):    # circular convolution
+    return ifft(fft(x) * fft(y))
+
+def fft_corr(x, H):
+    return ifft(np.conj(fft(x)) * fft(H))
+
+class HoloMemory:
+    def bind(self, K, V):    # phase-coded vectors length |P|
+        return fft_circ_conv(K, V)
+
+    def correlate(self, Kq):
+        return fft_corr(Kq, self.H)
+
+    def write(self, K, V, gain=1.0):
+        M = self.bind(K, V)
+        self.H = self.gamma * self.H + self.eta * gain * M
+
+    def read(self, Kq):
+        return self.correlate(Kq)
+
+K/V encoders map context and policy deltas to complex unit vectors (phase = code, amplitude = salience).
+
+⸻
+
+8) RL Bridge (Optional)
+
+8.1 Interface
+
+class RLPolicy:
+    def act(self, state: np.ndarray) -> dict: ...    # base continuous proposal n0
+    def update(self, batch) -> dict: ...
+
+8.2 State Packing
+
+state := concat(
+  features_vec(F),
+  phi(M),
+  onehot(BasisID),
+  [tau, H(Ψ), coherence, inventory, pnl_stats],
+  regime_soft(K)
+)
+
+
+⸻
+
+9) Risk Kernel (KAM Protection)
+
+9.1 Interface
+
+class RiskKernel:
+    def __init__(self, limits):
+        self.limits = limits  # per-trade risk, daily dd, leverage, exposure
+    def vet_intent(self, intent: TradeIntent, account_state: dict) -> TradeIntent|None: ...
+    def after_fill(self, fill: dict, account_state: dict) -> None: ...
+    def should_halt(self, metrics) -> bool: ...
+
+9.2 Pseudocode
+
+class RiskKernel:
+    def vet_intent(self, intent, acct):
+        if would_breach(intent, acct, self.limits):
+            return None
+        intent.qty = clip_qty(intent.qty, acct, self.limits)
+        intent.price = safety_price(intent, acct)
+        return intent
+
+    def should_halt(self, metrics):
+        return (metrics.daily_dd <= -self.limits.daily_dd
+                or metrics.var_99 > self.limits.var_max
+                or metrics.entropy_diverged)
+
+
+⸻
+
+10) Execution Interface (Abstract)
+
+10.1 Interface
+
+class ExecInterface:
+    def send(self, intent: TradeIntent) -> str: ...           # returns client_id
+    def cancel(self, client_id: str) -> None: ...
+    def poll(self) -> list[dict]: ...                         # fills, cancels, rejects
+
+Note: You own implementation to connect to any exchange; keep keys outside the ML stack.
+
+⸻
+
+11) Backtester / Simulator
+
+11.1 Interface
+
+class Simulator(ExecInterface):
+    def __init__(self, market_data, fee_schedule, slippage_model):
+        ...
+    def step(self, ts: Time) -> None: ...   # process events to ts
+
+11.2 Fill Model (simple)
+	•	Limit fills when price touches with probability from book depth.
+	•	Market orders fill fully with slip = f(vol, spread, trade_size).
+	•	Perps: add funding at intervals to PnL.
+
+⸻
+
+12) Ecology Core (Coordinator)
+
+12.1 Interface
+
+class Ecology:
+    def __init__(self, guilds, embedder, operators, bandit, tau_ctl, phase_learners, holo, risk, exec_iface, rl_policy=None):
+        ...
+    def step(self, o: Observation) -> None:
+        ...
+
+12.2 Pseudocode (Main Loop)
+
+class Ecology:
+    def step(self, o):
+        # 1) Prime embed and entropy
+        Ψ = self.embedder.embed(o, self.phi_vec)
+        HΨ = hilbert_entropy(Ψ)
+
+        # 2) Holo read (priors)
+        Kq = encode_key(o)                     # complex unit vector |P|
+        Vhat = self.holo.read(Kq)
+        (B_prior, dphi_prior, dtau_prior, hints) = decode_value(Vhat)
+
+        # 3) Sample basis/style with bandit
+        B = self.bandit.sample_with_prior(B_prior)
+        tau = self.tau_ctl.step(HΨ + dtau_prior)
+
+        # 4) Base proposal (RL or rule)
+        n0 = self.rl_policy.act(pack_state(o, self.phi_vec, B, tau)) if self.rl_policy else base_proposal(B, o, hints)
+
+        # 5) Hilbert refinement → action params
+        params = self.operators.refine(n0, Ψ, B, tau)
+
+        # 6) Risk wrap → trade intent
+        intent = params_to_intent(o.symbol, params)
+        intent_vetted = self.risk.vet_intent(intent, account_state())
+        if not intent_vetted:
+            return
+
+        # 7) Execute (sim or abstract)
+        cid = self.exec.send(intent_vetted)
+
+        # 8) Evaluate + reward
+        fills = self.exec.poll()               # update positions/PnL
+        r_t = reward_from_fills(fills, o)
+
+        # 9) Bandit, φ, Holo write, Baseline
+        self.bandit.update(B.id, r_t)
+        res_feats = residue_features(o, params)
+        self.phi_vec = self.phase_learners[B.id].step(r_t, self.baseline.update(r_t), res_feats)
+
+        if r_t > self.cfg.write_threshold:
+            K = encode_key_success(o, params)
+            V = encode_value(B, delta_phi(self.phase_learners[B.id]), delta_tau(self.tau_ctl), hints)
+            self.holo.write(K, V, gain=adv_gain(r_t))
+
+        # 10) Safety & logging
+        if self.risk.should_halt(self.metrics):
+            self.exec.cancel_open()
+            self.state = "HALT"
+        self.metrics.update(o, fills, HΨ, B.id, tau, r_t, memory_hit=np.linalg.norm(Vhat))
+
+
+⸻
+
+13) Data Schemas
+
+13.1 Metrics Row
+
+ts, symbol, pnl, equity, pos, leverage,
+Hpsi, tau, coherence, basis_id, style_id,
+reward, memory_hit, bandit_score, bandit_regret,
+stop_hits, tp_hits, slip_bps, fees, daily_dd
+
+13.2 Holographic Store (checkpoint)
+
+basis_id, H_complex[|P|], gamma, eta, last_write_ts, write_count
+
+
+⸻
+
+14) Configuration (YAML sketch)
+
+primes:
+  M: 73
+  list: [2,3,5,...]
+guilds:
+  - id: TF
+    bases: [[2,3,5,7,11,13,17], [2,3,5,11,19,23]]
+  - id: MR
+    bases: [[37,41,43,47,53], [59,61,67,71,73]]
+tau_controller:
+  H_star: 2.0
+  kP: 0.15
+  kI: 0.02
+bandit:
+  algo: thompson
+  prior_weight: 0.3
+phase:
+  eta0: 0.02
+  protected: []
+holographic:
+  gamma: 0.995
+  eta: 0.05
+risk:
+  max_trade_risk_pct: 0.5
+  daily_dd_pct: 2.5
+  var_max: 0.03
+  leverage_cap: 3.0
+training:
+  reward_weights: {fees: 1.0, turnover: 0.2, variance: 0.1, drawdown: 2.0}
+  write_threshold: 0.0
+
+
+⸻
+
+15) Testing & Validation
+	•	Unit tests
+	•	hilbert_entropy, project/collapse/measure
+	•	τ controller step response (setpoint tracking, no overshoot)
+	•	bandit convergence on synthetic stationary rewards
+	•	holo bind/correlate orthogonality and interference bounds
+	•	Property tests
+	•	risk kernel never emits intents that breach limits
+	•	phase learner bounded update under adversarial rewards
+	•	Backtest protocols
+	•	walk-forward split: train 60d, test 30d; rotate 2023–2025
+	•	fee/slip sensitivity ±50%
+	•	latency injection and partial fill randomness
+	•	Go/No-Go
+	•	Sharpe ≥ 1.0 after fees over ≥ 500 trades
+	•	Max DD ≤ configured D_max
+	•	Stable τ error |H(Ψ)−H*| median < 0.3
+	•	Positive memory-hit lift vs. disabled baseline
+
+⸻
+
+16) Build Order (modular)
+	1.	FeatureEngine + PrimeEmbedder + Operators
+	2.	TauController + Bandit + PhaseLearner
+	3.	HoloMemory enc/dec + residue features
+	4.	Simulator + RiskKernel + Ecology
+	5.	Dashboard + Metrics
+	6.	(Optional) RLPolicy head
+
+⸻
+
+Notation & Conventions
+	•	Primes P=\{p_1,\dots,p_M\} with an index map \mathrm{idx}(p_j)=j.
+	•	Complex vectors live in \mathbb{C}^M. We represent them as NumPy arrays of complex128.
+	•	wrap(x) wraps a real angle to [-\pi,\pi).
+	•	unit(e^{i\theta}) means magnitude 1 (unit phasor).
+	•	Stable seeded hash h(\cdot) → 64-bit integer.
+	•	Temperature/scale controls (τ_phase, τ_amp) let you tune sharpness and salience.
+
+⸻
+
+1) encode_key(o, cfg, P, guild_id=None) → np.ndarray[complex]
+
+Goal: Context → complex unit vector K\in\mathbb{C}^M.
+Inputs used: discretized integers from observation (e.g., ret_bucket, imb_bucket, regime_id, tod_bucket), symbol, optional guild/style id.
+
+Math
+
+We build component phasors per prime p from each discrete code x\in\mathbb{Z} and sum them with small amplitudes; then normalize to unit-magnitude per component.
+
+For a set of codes \mathcal{X}=\{x_1,\dots,x_L\} and tags \mathcal{T} (symbol, guild), define:
+\[
+\theta_{p}(x) \;=\; \frac{2\pi}{p}\,(x \bmod p) \;+\; \alpha_p, \quad
+\alpha_p=\mathrm{seed\phase}(p;\text{symbol},\text{guild})
+\]
+K_p \;=\; \sum{x\in\mathcal{X}} w_x \, e^{i\, \theta_p(x)} \;+\; \sum_{t\in\mathcal{T}} w_t\, e^{i\, \theta_p(t)}
+K \leftarrow \frac{K}{|K|} \quad\text{(element-wise unit magnitude)}
+Weights w_x are salience weights (default 1). Optional prime masking lets you emphasize subsets for regime tagging.
+
+Python
+
+import numpy as np
+
+def _seeded_phase(seed_bytes: bytes, p: int, two_pi=2*np.pi) -> float:
+    # stable 64-bit hash → [0, 2π)
+    h = np.frombuffer(np.uint64(np.abs(hash(seed_bytes)) & ((1<<63)-1)).tobytes(),
+                      dtype=np.uint64)[0]
+    return two_pi * ((h ^ np.uint64(p*1469598103934665603)) % (10**6)) / 1_000_000.0
+
+def encode_key(obs, cfg, P, guild_id=None):
+    """
+    obs.features_disc: dict[str,int]  e.g. {'ret_bucket':7, 'imb_bucket':3, ...}
+    obs.symbol: str
+    cfg.key.weights: dict[str,float]
+    cfg.key.mask: list[int] or None    # optional subset of primes to emphasize
+    """
+    M = len(P)
+    K = np.zeros(M, dtype=np.complex128)
+    codes = obs.features_disc.copy()
+    # Optionally add regime_id expanded (soft labels → discretized top-1)
+    if 'regime_id' not in codes and hasattr(obs, 'regime_soft'):
+        codes['regime_id'] = int(max(obs.regime_soft, key=obs.regime_soft.get))
+
+    # Per-prime seed (symbol + guild) creates a stable phase offset α_p
+    symbol_bytes = obs.symbol.encode('utf-8')
+    guild_bytes = (str(guild_id) if guild_id else 'NA').encode('utf-8')
+
+    weights = cfg.get('weights', {})
+    mask = set(cfg.get('mask', [])) if cfg.get('mask') else None
+
+    for j, p in enumerate(P):
+        alpha_p = _seeded_phase(symbol_bytes + b'|' + guild_bytes, p)
+        acc = 0+0j
+        for name, x in codes.items():
+            w = float(weights.get(name, 1.0))
+            r = x % p
+            theta = (2*np.pi * r / p) + alpha_p
+            acc += w * np.exp(1j * theta)
+        # Optional tag phasors (symbol/guild) with small weight
+        acc += 0.25 * np.exp(1j * (alpha_p + 0.37))  # tiny bias tag
+        # Prime masking (emphasize a subset)
+        if mask and p not in mask:
+            acc *= 0.5
+        # Ensure non-zero then unit-normalize element-wise
+        if acc == 0:
+            acc = 1+0j
+        K[j] = acc / np.abs(acc)
+    return K
+
+
+⸻
+
+2) encode_value(B, dphi, dtau, hints, cfg, P) → np.ndarray[complex]
+
+Goal: Strategy deltas (what worked) → complex unit vector V\in\mathbb{C}^M.
+Inputs:
+	•	B: active basis (subset of primes)
+	•	dphi: phase nudges (length M or dict over indices)
+	•	dtau: scalar τ shift
+	•	hints: small integers (e.g., breaker threshold bucket, grid width bucket)
+
+Math
+	•	Encode basis membership as aligned phasors on p\in B.
+	•	Encode phase deltas \Delta\phi_p as additive angles (scaled).
+	•	Encode τ delta as a global phase bias.
+	•	Encode hints as extra phasors via residue hashing.
+
+V_p \;=\; \underbrace{\beta_B \cdot \mathbf{1}[p\in B] \, e^{i\alpha_p}}{\text{basis tag}}
+\;\;+\;\; \underbrace{\beta\phi \cdot e^{i \kappa_\phi \Delta\phi_p}}{\text{phase delta}}
+\;\;+\;\; \underbrace{\beta\tau \cdot e^{i \kappa_\tau \Delta\tau}}{\tau\text{ bias}}
+\;\;+\;\; \sum{h\in\text{hints}} \beta_h \, e^{i\, \theta_p(h)}
+Element-wise normalize to unit magnitude.
+
+Python
+
+def encode_value(B, dphi, dtau, hints, cfg, P):
+    """
+    B.primes: list[int]
+    dphi: np.ndarray shape [M] (radians) or dict{p_idx: delta}
+    dtau: float
+    hints: dict[str,int] small integers
+    cfg.value: {beta_basis, beta_phi, beta_tau, beta_hint, k_phi, k_tau}
+    """
+    M = len(P)
+    V = np.zeros(M, dtype=np.complex128)
+    beta_basis = cfg.get('beta_basis', 0.8)
+    beta_phi   = cfg.get('beta_phi',   0.6)
+    beta_tau   = cfg.get('beta_tau',   0.4)
+    beta_hint  = cfg.get('beta_hint',  0.3)
+    k_phi      = cfg.get('k_phi',      1.0)
+    k_tau      = cfg.get('k_tau',      1.0)
+
+    # Prepare dphi vector
+    if isinstance(dphi, dict):
+        dphi_vec = np.zeros(M)
+        for idx, d in dphi.items():
+            dphi_vec[idx] = d
+    else:
+        dphi_vec = np.asarray(dphi)
+
+    basis_set = set(B.primes)
+    # Stable per-prime basis tag
+    for j, p in enumerate(P):
+        # Basis tag (phasor aligned via seeded α_p)
+        alpha_p = _seeded_phase(f"basis|{p}".encode(), p)
+        v = 0+0j
+        if p in basis_set:
+            v += beta_basis * np.exp(1j * alpha_p)
+        # Phase delta term
+        v += beta_phi * np.exp(1j * (k_phi * dphi_vec[j]))
+        # Global tau bias term
+        v += beta_tau * np.exp(1j * (k_tau * dtau))
+        # Hints (hashed residues)
+        if hints:
+            for name, hv in hints.items():
+                r = int(hv) % p
+                theta = (2*np.pi * r / p) + 0.11  # small offset
+                v += beta_hint * np.exp(1j * theta)
+
+        if v == 0:
+            v = 1+0j
+        V[j] = v / np.abs(v)
+    return V
+
+
+⸻
+
+3) residue_features(o, params, P, topk=12, mix='state+action') → dict[int,float]
+
+Goal: Sparse real features per prime index for phase learning:
+\text{features}[j] \approx \rho_{p_j} \in \mathbb{R}
+where \rho_{p} comes from residues of discretized state and action codes. We return a dict of indices → small floats for efficient updates.
+
+Math
+
+Build integer codes:
+	•	State code x_s (combine discretized features).
+	•	Action code x_a (bucketed size, side, style, thresholds).
+
+Per prime p:
+r_s = x_s \bmod p,\quad r_a = x_a \bmod p
+Combine (one option):
+\rho_p = \lambda_s \cdot \cos\!\left(\tfrac{2\pi r_s}{p}\right) + \lambda_a \cdot \sin\!\left(\tfrac{2\pi r_a}{p}\right)
+Select the top-k |\rho_p| indices to keep updates sparse and stable.
+
+Python
+
+def _mix_ints(values: list[int], seed=1469598103):
+    # simple mixed hash → integer code
+    h = seed
+    for v in values:
+        h = (h ^ (v + 0x9e3779b97f4a7c15)) & 0xffffffffffffffff
+        h = (h * 1099511628211) & 0xffffffffffffffff
+    return int(h & 0xffffffff)
+
+def residue_features(obs, params, P, topk=12, mix='state+action', lambdas=(1.0,1.0)):
+    """
+    params: dict with style, delta_q, and any discretized knobs (e.g., 'stop_b': bucket)
+    Returns: dict{prime_index:int -> float} sparse
+    """
+    # --- build state code (use same discretizers as key) ---
+    state_ints = []
+    for k, v in sorted(obs.features_disc.items()):
+        state_ints.append(int(v))
+    x_s = _mix_ints(state_ints)
+
+    # --- build action code ---
+    # Bucket delta_q, style, and select params to integers
+    style_id = int(params.get('style_id', 0))
+    dq_bucket = int(np.clip(abs(params.get('delta_q', 0.0))*1000, 0, 999))
+    knobs = []
+    for name in sorted(params.keys()):
+        if name in ('style_id','delta_q'):
+            continue
+        val = params[name]
+        if isinstance(val, (int, np.integer)):
+            knobs.append(int(val))
+        elif isinstance(val, float):
+            knobs.append(int(np.clip(round(val*1000), -999, 999)) & 0xffff)
+    x_a = _mix_ints([style_id, dq_bucket] + knobs, seed=2166136261)
+
+    lam_s, lam_a = lambdas
+    feats = []
+    for j, p in enumerate(P):
+        rs = x_s % p
+        ra = x_a % p
+        val = lam_s * np.cos(2*np.pi*rs/p) + lam_a * np.sin(2*np.pi*ra/p)
+        feats.append((j, float(val)))
+
+    # sparsify: keep top-k magnitudes
+    feats.sort(key=lambda t: abs(t[1]), reverse=True)
+    sparse = {j: v for (j, v) in feats[:topk] if abs(v) > 1e-6}
+    return sparse
+
+
+⸻
+
+4) Encoders — Practical Tips
+	•	Temperature: If retrieval feels too “peaky,” add a small amplitude (<0.2) before normalizing to avoid numerical issues; if too flat, increase weights.
+	•	Orthogonality: Add a tiny per-task phase dither to encode_key to reduce cross-talk across symbols/sessions.
+	•	Consistency: Use the same discretizers in the Feature Engine for both encode_key and residue_features.
+	•	Scaling: Keep topk small (8–16) for fast φ updates and stability.
+	•	Safety: Clamp any NaNs; ensure no zero magnitudes before normalization.
+
+⸻
+
+5) Minimal usage flow
+
+# Build encoders once
+Kq = encode_key(obs, cfg.key, P, guild_id=style_id)
+V_prior = holo.read(Kq)                 # complex vector
+B_prior, dphi_prior, dtau_prior, hints = decode_value(V_prior)  # your decoder
+
+# After trade and reward calc
+sparse_feats = residue_features(obs, params, P, topk=12)
+phi = phase_learner.step(reward, baseline, sparse_feats)
+
+# On success, write memory
+K = encode_key(obs, cfg.key, P, guild_id=style_id)
+V = encode_value(B, dphi=delta_phi, dtau=delta_tau, hints=hints_used, cfg=cfg.value, P=P)
+holo.write(K, V, gain=adv_gain(reward))
+
+⸻
+
+here’s a precise, implementation-ready decode_value that maps the retrieved complex holographic vector \hat V\in\mathbb{C}^{|P|} back into:
+	•	a prior over bases/styles (B_prior)
+	•	an elementwise phase nudge dphi (length |P| real radians)
+	•	a global τ shift dtau (real scalar)
+	•	a compact dict of hints (small integers)
+	•	optional confidence scores you can use to weight these priors
+
+It mirrors how we encoded things in encode_value, so the round-trip is consistent.
+
+⸻
+
+1) Mathematical sketch
+
+Given \hat V = (\hat V_p)_{p\in P} with \hat V_p = r_p e^{i\theta_p} (we expect r_p\approx 1; our encoders normalized each component):
+	•	Basis prior for a candidate basis B\subset P:
+s_B \;=\; \frac{1}{|B|}\sum_{p\in B} \Re\!\big(\hat V_p \cdot e^{-i\alpha^{(B)}_p}\big),
+where \alpha^{(B)}_p is the seeded basis phase used in encode_value for tag “basis|p”.
+Intuition: project \hat V onto the known basis tag phasors; average the real parts.
+	•	Phase nudge per prime:
+d\phi_p \;=\; \kappa_\phi \cdot \mathrm{wrap}\!\big(\theta_p\big),
+because encode_value added a term e^{i \kappa_\phi \Delta\phi_p}. We optionally denoise with a small shrinkage.
+	•	Global τ shift:
+Since encode_value added a global e^{i\kappa_\tau \Delta\tau} to all p, estimate by the circular mean of \hat V_p after removing basis tags:
+\widehat{\Delta\tau} \;=\; \frac{1}{\kappa_\tau}\arg\!\left(\frac{1}{M}\sum_{p} \hat V_p \cdot e^{-i\alpha^{(B)}_p\,\mathbf{1}[p\in B^]}\right),
+where B^ is the most likely basis (or empty during the first pass).
+	•	Hints:
+We encoded each hint as residues r=\text{hint}\bmod p via e^{i(2\pi r/p + \delta)}.
+Recover an integer by Chinese-remainder-like voting:
+\hat r_p \;=\; \mathrm{round}\!\big( \tfrac{p}{2\pi} \,\mathrm{wrap}(\theta_p-\delta)\big) \bmod p,
+then aggregate \hat r_p across multiple primes with weighted modal voting, and (optionally) lift back to a small integer by CRT (limited range).
+
+⸻
+
+2) Implementation (Python, NumPy)
+
+import numpy as np
+from collections import Counter, defaultdict
+
+_TWO_PI = 2*np.pi
+
+def _wrap_angle(x):
+    """wrap to (-pi, pi]"""
+    return (x + np.pi) % (2*np.pi) - np.pi
+
+def _seeded_phase(seed_bytes: bytes, p: int) -> float:
+    # must match encode_value's seeding!
+    h = np.frombuffer(np.uint64(np.abs(hash(seed_bytes)) & ((1<<63)-1)).tobytes(),
+                      dtype=np.uint64)[0]
+    return _TWO_PI * ((h ^ np.uint64(p*1469598103934665603)) % (10**6)) / 1_000_000.0
+
+def decode_value(
+    Vhat: np.ndarray,           # complex128, shape [M]
+    P: list[int],               # primes
+    basis_catalog: dict,        # {basis_id: list[int]}
+    cfg_value: dict,            # must share k_phi,k_tau,beta_* with encoder
+    known_hint_names: list[str] = None,
+    delta_offset_hint: float = 0.11,  # must match encoder's +0.11
+    shrink_phi: float = 0.30,         # shrinkage for stability
+    dtau_clip: float = 2.0,           # safety bound in radians/k_tau
+    return_confidence: bool = True
+):
+    """
+    Returns:
+      B_prior: dict[basis_id -> score]  (to add as prior in bandit)
+      dphi: np.ndarray shape [M] radians
+      dtau: float (radians / k_tau)
+      hints: dict[str,int]
+      conf: dict with 'basis_conf','phi_snr','tau_conf' (optional)
+    """
+    M = len(P)
+    angles = np.angle(Vhat)          # θ_p
+    mags   = np.abs(Vhat)            # expect ~1; use for confidence if needed
+
+    k_phi = cfg_value.get('k_phi', 1.0)
+    k_tau = cfg_value.get('k_tau', 1.0)
+
+    # ---------- (1) BASIS PRIOR ----------
+    B_scores = {}
+    # projection using same seeded tag as encoder: alpha_p = phase("basis|p")
+    alpha_basis = np.array([_seeded_phase(f"basis|{p}".encode(), p) for p in P])
+
+    for bid, B_primes in basis_catalog.items():
+        mask = np.array([1 if p in set(B_primes) else 0 for p in P], dtype=np.float64)
+        # Project Vhat onto basis tag direction e^{-i alpha_p}
+        proj = np.real(Vhat * np.exp(-1j*alpha_basis))
+        # Average only across primes in B
+        denom = mask.sum() if mask.sum() > 0 else 1.0
+        score = (proj * mask).sum() / denom
+        B_scores[bid] = float(score)
+
+    # Normalize to [0,1] with softmax for priors
+    scores_arr = np.array(list(B_scores.values()))
+    if scores_arr.size == 0:
+        B_prior = {}
+        best_B = None
+        basis_conf = 0.0
+    else:
+        # temperature can be tuned; 1.0 default
+        temp = 1.0
+        exps = np.exp((scores_arr - scores_arr.max())/max(1e-6,temp))
+        probs = exps / (exps.sum() + 1e-12)
+        B_prior = {bid: float(p) for bid, p in zip(B_scores.keys(), probs)}
+        best_B = max(B_prior.items(), key=lambda kv: kv[1])[0]
+        basis_conf = float(B_prior[best_B])
+
+    # ---------- (2) dphi (per-prime phase nudges) ----------
+    # In encode_value: added e^{i k_phi * dphi_p}; we approximate dphi_p ≈ angles / k_phi
+    dphi = _wrap_angle(angles) / max(k_phi, 1e-6)
+    # optional shrinkage for numeric stability
+    dphi *= (1.0 - shrink_phi)
+
+    # ---------- (3) dtau (global τ shift) ----------
+    # Remove basis tag if best_B available, then take circular mean
+    if best_B is not None:
+        mask_best = np.array([1 if p in set(basis_catalog[best_B]) else 0 for p in P])
+    else:
+        mask_best = np.zeros(M)
+
+    # remove basis tag phasor on those primes
+    V_clean = Vhat.copy()
+    idxs = np.where(mask_best > 0)[0]
+    if idxs.size > 0:
+        V_clean[idxs] = V_clean[idxs] * np.exp(-1j * alpha_basis[idxs])
+    # circular mean of all components
+    mean_vec = V_clean.mean()
+    dtau = _wrap_angle(np.angle(mean_vec)) / max(k_tau, 1e-6)
+    dtau = float(np.clip(dtau, -dtau_clip, dtau_clip))
+    tau_conf = float(np.abs(mean_vec))   # ∈ [0,1]; closer to 1 means tight concentration
+
+    # ---------- (4) HINTS ----------
+    # We encoded hints via per-prime residue phases: θ_p ≈ 2π r/p + δ
+    # Try to reconstruct a small integer per hint via voting.
+    hints = {}
+    if known_hint_names:
+        # Build candidate residues per hint name
+        for hname in known_hint_names:
+            votes = []
+            for j, p in enumerate(P):
+                # estimate residue in [0, p)
+                r_est = int(np.round((p/_TWO_PI) * _wrap_angle(angles[j] - delta_offset_hint))) % p
+                votes.append((p, r_est, mags[j]))
+            # Weighted mode across primes (weight by magnitude)
+            # Option A: try to lift with CRT to a small integer range [0, H_MAX)
+            # For simplicity, we do weighted majority residue across the first K primes.
+            counter = Counter()
+            for (p, r, w) in votes[: min(12, len(votes))]:
+                counter[r] += float(max(0.0, w))
+            if len(counter) > 0:
+                residue_mode, _ = counter.most_common(1)[0]
+                hints[hname] = int(residue_mode)   # caller can map residue to bucket if needed
+
+    # ---------- (5) Confidence bundle ----------
+    conf = None
+    if return_confidence:
+        # crude phi SNR: std of angles; lower std => better signal
+        phi_snr = float(1.0 / (np.std(_wrap_angle(angles)) + 1e-6))
+        conf = {"basis_conf": basis_conf, "phi_snr": phi_snr, "tau_conf": tau_conf}
+
+    return B_prior, dphi, dtau, hints, conf
+
+
+⸻
+
+3) Using decode_value in the loop
+
+# Read memory → decode priors
+Kq      = encode_key(obs, cfg.key, P, guild_id=style_id)
+Vhat    = holo.read(Kq)
+B_prior, dphi_prior, dtau_prior, hints_prior, conf = decode_value(
+                  Vhat, P, basis_catalog, cfg.value, known_hint_names=['breakout_thr','grid_w'])
+
+# Apply priors (with confidence)
+phi  = phi + conf['phi_snr'] * dphi_prior           # small nudge
+tau  = tau + conf['tau_conf'] * dtau_prior          # bias τ softly
+B    = bandit.sample_with_prior(B_prior)            # style/basis choice
+params_hints = hints_prior                           # pass to refiner
+
+
+⸻
+
+4) Calibration checklist
+	•	Consistency: The seeded phases in decode_value ("basis|p") must exactly match your encode_value seeding.
+	•	Shrinkage: shrink_phi∈[0.2,0.5] often stabilizes dphi; tune with backtests.
+	•	dtau: Clip to reasonable bounds (e.g., ±2/k_tau); use tau_conf to weight.
+	•	Hints: If you know the hint range (e.g., 0–31), you can CRT-lift the residues across the first few primes to get the full integer robustly.
+	•	Safety: Always wrap angles, guard divide-by-zero, assert shapes.
