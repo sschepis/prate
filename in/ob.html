@@ -1,0 +1,523 @@
+
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  
+  <meta name="robots" content="noindex">
+  
+  
+
+  <title>Untitled</title>
+
+    <link rel="canonical" href="https://codepen.io/sschepis/pen/RNrLvQR/5d49e6b23171cc6bf542d96bfab90e15">
+  
+  <link rel="stylesheet" href="https://public.codepenassets.com/css/normalize-5.0.0.min.css">
+
+  
+  
+
+  
+  
+  
+</head>
+
+<body>
+  <html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcoin Order Book</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 72rem;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 1.5rem;
+    }
+
+    .title {
+      font-size: 1.875rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      color: white;
+      font-size: 0.875rem;
+      transition: background-color 0.2s;
+    }
+
+    .btn-active {
+      background-color: #2563eb;
+    }
+
+    .btn-inactive {
+      background-color: #1f2937;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      background-color: #111827;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .price-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .price-label {
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+
+    .price-value {
+      font-size: 1.875rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .price-green {
+      color: #34d399;
+    }
+
+    .price-red {
+      color: #f87171;
+    }
+
+    .change-value {
+      font-size: 1.25rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-2 {
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 1024px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .order-row {
+      display: flex;
+      align-items: center;
+      height: 1.5rem;
+      font-size: 0.75rem;
+      position: relative;
+    }
+
+    .order-qty {
+      width: 4rem;
+      text-align: right;
+      padding-right: 0.5rem;
+      opacity: 0.7;
+    }
+
+    .order-price {
+      width: 5rem;
+      font-family: monospace;
+    }
+
+    .order-bar-container {
+      flex: 1;
+      position: relative;
+      height: 100%;
+    }
+
+    .order-bar {
+      position: absolute;
+      height: 100%;
+    }
+
+    .bid-bar-cum {
+      background-color: rgba(22, 163, 74, 0.4);
+    }
+
+    .bid-bar-qty {
+      background-color: rgba(22, 163, 74, 0.6);
+    }
+
+    .ask-bar-cum {
+      background-color: rgba(220, 38, 38, 0.4);
+    }
+
+    .ask-bar-qty {
+      background-color: rgba(220, 38, 38, 0.6);
+    }
+
+    .volume-charts {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .volume-chart {
+      flex: 1;
+    }
+
+    .volume-label {
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .volume-dist {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 5rem;
+    }
+
+    .volume-side {
+      flex: 1;
+    }
+
+    .volume-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .volume-circle {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      border: 4px solid;
+      border-color: #22c55e #ef4444 #ef4444 #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .footer {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .ml-auto {
+      margin-left: auto;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-left {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">
+        <i data-lucide="activity" style="color: #60a5fa;"></i>
+        Bitcoin Order Book
+      </h1>
+      
+      <div class="button-group">
+        <button id="btn-btc" class="btn btn-active">BTC/USDT</button>
+        <button id="btn-eth" class="btn btn-inactive">ETH/USDT</button>
+      </div>
+
+      <div class="card">
+        <div class="price-container">
+          <div>
+            <div class="price-label">Last Price</div>
+            <div id="price-display" class="price-value price-green">
+              $0.00
+              <i data-lucide="trending-up"></i>
+            </div>
+          </div>
+          <div>
+            <div class="price-label">24h Change</div>
+            <div id="change-display" class="change-value price-green">+0.00</div>
+          </div>
+          <div class="ml-auto">
+            <svg id="price-chart" width="200" height="40"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2 class="section-title">BID/ASK VOLUME</h2>
+        <div class="volume-charts">
+          <div class="volume-chart">
+            <svg id="bid-volume-chart" width="200" height="40"></svg>
+            <div class="volume-label price-green">Bids</div>
+          </div>
+          <div class="volume-chart">
+            <svg id="ask-volume-chart" width="200" height="40"></svg>
+            <div class="volume-label price-red">Asks</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">VOLUME DISTRIBUTION</h2>
+        <div class="volume-dist">
+          <div class="volume-side text-right">
+            <div id="total-bids" class="volume-value price-green">0</div>
+            <div class="price-label">Total Bids</div>
+          </div>
+          <div class="volume-circle">VS</div>
+          <div class="volume-side text-left">
+            <div id="total-asks" class="volume-value price-red">0</div>
+            <div class="price-label">Total Asks</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2 class="section-title" style="color: #f87171;">ASKS (SELL ORDERS)</h2>
+        <div id="asks-container"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title" style="color: #34d399;">BIDS (BUY ORDERS)</h2>
+        <div id="bids-container"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Real-time data from Binance WebSocket • Updates every 100ms
+    </div>
+  </div>
+
+</body>
+</html>
+  
+    <script id="rendered-js" type="module">
+import * as lucide from "https://esm.sh/lucide-react";
+
+
+
+    let ws = null;
+    let symbol = 'btcusdt';
+    let orderBook = { bids: [], asks: [] };
+    let ticker = { price: 0, change: 0 };
+    let priceHistory = [];
+    let volumeHistory = { bids: [], asks: [] };
+
+    function connectWebSocket() {
+      if (ws) {
+        ws.close();
+      }
+
+      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@depth20@100ms/${symbol}@ticker`);
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.e === 'depthUpdate' || data.lastUpdateId) {
+          const bids = (data.bids || []).slice(0, 15).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+          const asks = (data.asks || []).slice(0, 15).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+          
+          orderBook = { bids, asks };
+          
+          const bidVolume = bids.reduce((sum, [, qty]) => sum + qty, 0);
+          const askVolume = asks.reduce((sum, [, qty]) => sum + qty, 0);
+          
+          volumeHistory.bids = [...volumeHistory.bids.slice(-49), bidVolume];
+          volumeHistory.asks = [...volumeHistory.asks.slice(-49), askVolume];
+          
+          updateDisplay();
+        }
+        
+        if (data.e === '24hrTicker') {
+          const currentPrice = parseFloat(data.c);
+          const priceChange = parseFloat(data.p);
+          
+          ticker = { price: currentPrice, change: priceChange };
+          priceHistory = [...priceHistory.slice(-99), currentPrice];
+          
+          updateDisplay();
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    }
+
+    function calculateCumulativeVolume(orders) {
+      let cumulative = 0;
+      return orders.map(([price, qty]) => {
+        cumulative += qty;
+        return [price, cumulative, qty];
+      });
+    }
+
+    function renderOrderBook(orders, type, containerId) {
+      if (orders.length === 0) return;
+
+      const cumulativeOrders = calculateCumulativeVolume(orders);
+      const maxVolume = Math.max(...cumulativeOrders.map(([, cum]) => cum));
+      const maxBarWidth = 200;
+
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      cumulativeOrders.forEach(([price, cumVolume, qty]) => {
+        const barWidth = (cumVolume / maxVolume) * maxBarWidth;
+        const qtyBarWidth = (qty / maxVolume) * maxBarWidth;
+        const priceStr = price.toFixed(2);
+        const wholePart = priceStr.split('.')[0];
+        const decimalPart = priceStr.split('.')[1];
+        
+        const row = document.createElement('div');
+        row.className = 'order-row';
+        
+        row.innerHTML = `
+          <div class="order-qty">${qty.toFixed(4)}</div>
+          <div class="order-price">
+            <span style="color: white;">${wholePart}</span>
+            <span style="color: #6b7280;">.${decimalPart}</span>
+          </div>
+          <div class="order-bar-container">
+            <div class="order-bar ${type}-bar-cum" style="width: ${barWidth}px;"></div>
+            <div class="order-bar ${type}-bar-qty" style="width: ${qtyBarWidth}px;"></div>
+          </div>
+        `;
+        
+        container.appendChild(row);
+      });
+    }
+
+    function renderMiniChart(data, color, svgId) {
+      if (data.length < 2) return;
+      
+      const max = Math.max(...data);
+      const min = Math.min(...data);
+      const range = max - min || 1;
+      const height = 40;
+      const width = 200;
+      
+      const points = data.map((value, idx) => {
+        const x = (idx / (data.length - 1)) * width;
+        const y = height - ((value - min) / range) * height;
+        return `${x},${y}`;
+      }).join(' ');
+      
+      const svg = document.getElementById(svgId);
+      svg.innerHTML = `
+        <polyline
+          points="${points}"
+          fill="none"
+          stroke="${color}"
+          stroke-width="2"
+          opacity="0.8"
+        />
+      `;
+    }
+
+    function updateDisplay() {
+      // Update price display
+      const priceDisplay = document.getElementById('price-display');
+      const changeDisplay = document.getElementById('change-display');
+      const priceColor = ticker.change >= 0 ? 'price-green' : 'price-red';
+      const icon = ticker.change >= 0 ? 'trending-up' : 'trending-down';
+      
+      priceDisplay.className = `price-value ${priceColor}`;
+      priceDisplay.innerHTML = `$${ticker.price.toFixed(2)} <i data-lucide="${icon}"></i>`;
+      
+      changeDisplay.className = `change-value ${priceColor}`;
+      changeDisplay.textContent = `${ticker.change >= 0 ? '+' : ''}${ticker.change.toFixed(2)}`;
+      
+      // Update charts
+      renderMiniChart(priceHistory, '#10b981', 'price-chart');
+      renderMiniChart(volumeHistory.bids, '#10b981', 'bid-volume-chart');
+      renderMiniChart(volumeHistory.asks, '#ef4444', 'ask-volume-chart');
+      
+      // Update volume totals
+      document.getElementById('total-bids').textContent = 
+        (volumeHistory.bids[volumeHistory.bids.length - 1] || 0).toFixed(2);
+      document.getElementById('total-asks').textContent = 
+        (volumeHistory.asks[volumeHistory.asks.length - 1] || 0).toFixed(2);
+      
+      // Update order books
+      renderOrderBook([...orderBook.asks].reverse(), 'ask', 'asks-container');
+      renderOrderBook(orderBook.bids, 'bid', 'bids-container');
+    }
+
+    // Button handlers
+    document.getElementById('btn-btc').addEventListener('click', () => {
+      symbol = 'btcusdt';
+      document.getElementById('btn-btc').className = 'btn btn-active';
+      document.getElementById('btn-eth').className = 'btn btn-inactive';
+      connectWebSocket();
+    });
+
+    document.getElementById('btn-eth').addEventListener('click', () => {
+      symbol = 'ethusdt';
+      document.getElementById('btn-eth').className = 'btn btn-active';
+      document.getElementById('btn-btc').className = 'btn btn-inactive';
+      connectWebSocket();
+    });
+
+    // Initialize
+    connectWebSocket();
+  </script>
+
+  
+</body>
+
+</html>
