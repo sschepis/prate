@@ -1,0 +1,21 @@
+# Development Environment Overrides
+
+# Use smaller values for faster iteration
+primes:
+  M: 50
+
+# Reduced buffer for faster testing
+features:
+  buffer_size: 100
+
+# Enable debug logging
+logging:
+  level: DEBUG
+
+# Disable monitoring in dev
+monitoring:
+  enabled: false
+
+# Smaller simulator balance for testing
+simulator:
+  initial_balance: 10000
