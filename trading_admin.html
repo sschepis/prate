@@ -115,27 +115,27 @@
         <!-- Left Sidebar - Navigation -->
         <div class="w-48 flex-shrink-0 bg-gray-800 rounded-lg shadow-xl p-3">
             <nav class="space-y-1">
-                <button onclick="switchTab('trading')" class="nav-tab w-full text-left px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+                <button onclick="switchTab('trading', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
                     <i data-feather="trending-up" class="w-4 h-4"></i>
                     Trading
                 </button>
-                <button onclick="switchTab('admin')" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                <button onclick="switchTab('admin', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
                     <i data-feather="sliders" class="w-4 h-4"></i>
                     Admin
                 </button>
-                <button onclick="switchTab('monitoring')" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                <button onclick="switchTab('monitoring', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
                     <i data-feather="activity" class="w-4 h-4"></i>
                     Monitoring
                 </button>
-                <button onclick="switchTab('risk')" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                <button onclick="switchTab('risk', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
                     <i data-feather="shield" class="w-4 h-4"></i>
                     Risk
                 </button>
-                <button onclick="switchTab('memory')" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                <button onclick="switchTab('memory', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
                     <i data-feather="database" class="w-4 h-4"></i>
                     Memory
                 </button>
-                <button onclick="switchTab('backtest')" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                <button onclick="switchTab('backtest', event)" class="nav-tab w-full text-left px-3 py-2 rounded-md text-gray-400 hover:bg-gray-700 flex items-center gap-2">
                     <i data-feather="bar-chart-2" class="w-4 h-4"></i>
                     Backtest
                 </button>
@@ -302,11 +302,11 @@
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-400 mb-1">API Key</label>
-                                <input type="password" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" placeholder="••••••••">
+                                <input type="password" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" placeholder="••••••••" autocomplete="off" data-form-type="other">
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-400 mb-1">API Secret</label>
-                                <input type="password" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" placeholder="••••••••">
+                                <input type="password" class="w-full bg-gray-700 rounded-md px-3 py-2 text-sm" placeholder="••••••••" autocomplete="off" data-form-type="other">
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 bg-red-400 rounded-full"></div>
@@ -771,7 +771,7 @@
         feather.replace();
 
         // Tab switching
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -785,8 +785,10 @@
                 btn.classList.remove('bg-blue-600', 'text-white');
                 btn.classList.add('text-gray-400', 'hover:bg-gray-700');
             });
-            event.target.classList.remove('text-gray-400', 'hover:bg-gray-700');
-            event.target.classList.add('bg-blue-600', 'text-white');
+            if (event && event.target) {
+                event.target.classList.remove('text-gray-400', 'hover:bg-gray-700');
+                event.target.classList.add('bg-blue-600', 'text-white');
+            }
             
             feather.replace();
         }
@@ -803,21 +805,25 @@
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@depth20@100ms`);
             
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.lastUpdateId) {
-                    const bids = (data.bids || []).slice(0, 10).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
-                    const asks = (data.asks || []).slice(0, 10).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+                try {
+                    const data = JSON.parse(event.data);
                     
-                    orderBook = { bids, asks };
-                    
-                    if (bids.length > 0 && asks.length > 0) {
-                        currentPrice = (bids[0][0] + asks[0][0]) / 2;
-                        document.getElementById('current-price').textContent = '$' + currentPrice.toFixed(2) + ' ▲';
-                        document.getElementById('spread-price').textContent = '$' + currentPrice.toFixed(2);
+                    if (data.lastUpdateId) {
+                        const bids = (data.bids || []).slice(0, 10).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+                        const asks = (data.asks || []).slice(0, 10).map(([price, qty]) => [parseFloat(price), parseFloat(qty)]);
+                        
+                        orderBook = { bids, asks };
+                        
+                        if (bids.length > 0 && asks.length > 0) {
+                            currentPrice = (bids[0][0] + asks[0][0]) / 2;
+                            document.getElementById('current-price').textContent = '$' + currentPrice.toFixed(2) + ' ▲';
+                            document.getElementById('spread-price').textContent = '$' + currentPrice.toFixed(2);
+                        }
+                        
+                        renderOrderBook();
                     }
-                    
-                    renderOrderBook();
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
                 }
             };
         }
