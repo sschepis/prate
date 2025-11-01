@@ -420,7 +420,31 @@ class MEXCFuturesExecution(ExecutionInterface):
         client_order_id: Optional[str] = None,
         **kwargs
     ) -> Optional[Order]:
-        """Create a new order on MEXC."""
+        """
+        Create a new order on MEXC.
+        
+        NOTE: MEXC API requires a price parameter even for MARKET orders.
+        For market orders, pass the current market price obtained from
+        ticker data or order book. The price serves as a reference but
+        market orders will execute at the best available price.
+        
+        Args:
+            symbol: Trading pair (e.g., "BTC_USDT")
+            side: Order side (BUY/SELL)
+            order_type: Type of order (LIMIT/MARKET/IOC/FOK)
+            quantity: Order quantity
+            price: Limit price or current market price (required for MEXC)
+            leverage: Position leverage (default: 10)
+            margin_mode: Isolated or cross margin (default: ISOLATED)
+            client_order_id: Optional custom order ID
+            **kwargs: Additional parameters (e.g., is_close=True for closing)
+            
+        Returns:
+            Order object if successful, None otherwise
+            
+        Raises:
+            ValueError: If price is None for market orders
+        """
         if not self._connected:
             logger.warning("Not connected to MEXC - cannot create order")
             return None
